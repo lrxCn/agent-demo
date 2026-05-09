@@ -13,6 +13,58 @@ from src.tools.registry import registry
 
 TIMEOUT_SECONDS = 30
 
+# 与 retry / tool 节点返回文案对齐，用于判断是否走 fallback
+_FAILURE_MARKERS: tuple[str, ...] = (
+    '⚠️',
+    '❌',
+    '⏱️',
+    '调用超时',
+    '未找到工具',
+)
+
+
+def _collect_trailing_tool_messages(state: AgentState) -> list[ToolMessage]:
+    """取状态末尾连续的一段 ToolMessage（本轮工具输出）"""
+    batch: list[ToolMessage] = []
+    for msg in reversed(state['messages']):
+        if isinstance(msg, ToolMessage):
+            batch.append(msg)
+        else:
+            break
+    batch.reverse()
+    return batch
+
+
+def _tool_message_indicates_failure(content: str) -> bool:
+    return any(marker in content for marker in _FAILURE_MARKERS)
+
+
+def after_tools(state: AgentState) -> str:
+    """工具执行后：若本轮任一 ToolMessage 含失败标记则走 fallback，否则回 chat"""
+    for msg in _collect_trailing_tool_messages(state):
+        if _tool_message_indicates_failure(msg.content):
+            return 'fallback'
+    return 'chat'
+
+
+def fallback_node(state: AgentState) -> dict[str, list[BaseMessage]]:
+    """回退节点：本轮工具失败时汇总为一条友好 AI 说明"""
+    failed = [
+        m
+        for m in _collect_trailing_tool_messages(state)
+        if _tool_message_indicates_failure(m.content)
+    ]
+    if not failed:
+        return {'messages': []}
+    summary = '\n'.join(m.content for m in failed)
+    return {
+        'messages': [
+            AIMessage(
+                content=f'抱歉，操作遇到问题：\n{summary}\n\n请稍后重试。',
+            ),
+        ],
+    }
+
 
 def get_llm(tools: list[BaseTool] | None = None) -> ChatOpenAI:
     """获取 LLM 实例"""
