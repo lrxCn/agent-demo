@@ -17,6 +17,10 @@ export class PermissionDaoSqlite implements IPermissionDao {
     return this.repo.findOne({ where: { id } });
   }
 
+  async findByCode(code: string): Promise<Permission | null> {
+    return this.repo.findOne({ where: { code } });
+  }
+
   async findAll(query?: PaginationQuery): Promise<PaginatedResult<Permission>> {
     const { page, pageSize, skip, keyword } = resolvePagination(query);
     const qb = this.repo.createQueryBuilder('p');

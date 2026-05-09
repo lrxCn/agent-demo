@@ -9,14 +9,17 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { PaginationQuery } from '../dao/interfaces/base-dao.interface';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { AssignUserRolesDto } from './dto/assign-user-roles.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserService } from './user.service';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

@@ -47,7 +47,7 @@
 |------|------|------|----------|------|
 | 2-1 | DAO 抽象层 + SQLite TypeORM | ✅ | 2026-05-09 | TypeORM better-sqlite3、五类实体与 M2M、DAO 接口 + SQLite 实现、`DaoModule` token 注入 |
 | 2-2 | User 模块 | ✅ | 2026-05-09 | User CRUD + 分配角色、bcrypt 密码、`ResponseInterceptor` / `HttpExceptionFilter`、全局 `api/v1` 前缀与 `ValidationPipe` |
-| 2-3 | JWT 认证 + 内置 admin/admin | ⬜ | | |
+| 2-3 | JWT 认证 + 内置 admin/admin | ✅ | 2026-05-09 | `AuthModule`（login/refresh、Passport JWT）、守卫与装饰器、环境变量签发 access/refresh、`AdminBootstrapService` 种子 admin + `*` 权限与角色、`UserController` 受 `JwtAuthGuard` 保护 |
 | 2-4 | Role + Permission RBAC | ⬜ | | |
 | 2-5 | Student 模块 (CRUD+批量) | ⬜ | | |
 | 2-6 | Agent 代理层 (SSE 流式转发) | ⬜ | | |
@@ -121,3 +121,4 @@
 | 2026-05-09 | Phase 1 Step 1-9：`langgraph dev` 本地验证；`langgraph.json` 已对齐；Phase 1 收尾提交 |
 | 2026-05-09 | Phase 2 Step 2-1：TypeORM + SQLite、`*.entity`、DAO 接口与 `sqlite` 实现、`DaoModule`、`main` 创建 `data/` |
 | 2026-05-09 | Phase 2 Step 2-2：`UserModule`（DTO/Service/Controller）、`IUserDao` 扩展 `findByUsername` / `findWithRolesById` / `assignRoles`、全局响应包装与异常过滤器、`main` 全局前缀与校验管道 |
+| 2026-05-09 | Phase 2 Step 2-3：JWT 登录与刷新、`JwtStrategy`、通用守卫/装饰器、DAO 扩展（`findByCode` / `findByName` / `setPermissions`）、内置 admin 种子、`tsconfig` 关闭 declaration 以规避 PassportStrategy 声明文件问题 |

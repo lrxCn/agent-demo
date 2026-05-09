@@ -27,7 +27,10 @@ export class UserDaoSqlite implements IUserDao {
   }
 
   async findWithRolesById(id: string): Promise<User | null> {
-    return this.repo.findOne({ where: { id }, relations: ['roles'] });
+    return this.repo.findOne({
+      where: { id },
+      relations: ['roles', 'roles.permissions'],
+    });
   }
 
   async assignRoles(userId: string, roleIds: string[]): Promise<User> {
@@ -54,7 +57,7 @@ export class UserDaoSqlite implements IUserDao {
     }
     const reloaded = await this.repo.findOne({
       where: { id: userId },
-      relations: ['roles'],
+      relations: ['roles', 'roles.permissions'],
     });
     if (!reloaded) {
       throw new NotFoundException(`用户不存在: ${userId}`);

@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+import { Permission } from '../../permission/permission.entity';
 import { Role } from '../../role/role.entity';
 import { PaginatedResult, PaginationQuery } from '../interfaces/base-dao.interface';
 import { IRoleDao } from '../interfaces/role-dao.interface';
@@ -15,6 +20,42 @@ export class RoleDaoSqlite implements IRoleDao {
 
   async findById(id: string): Promise<Role | null> {
     return this.repo.findOne({ where: { id } });
+  }
+
+  async findByName(name: string): Promise<Role | null> {
+    return this.repo.findOne({ where: { name } });
+  }
+
+  async setPermissions(roleId: string, permissionIds: string[]): Promise<Role> {
+    const role = await this.repo.findOne({
+      where: { id: roleId },
+      relations: ['permissions'],
+    });
+    if (!role) {
+      throw new NotFoundException(`角色不存在: ${roleId}`);
+    }
+    const uniqueIds = [...new Set(permissionIds)];
+    if (uniqueIds.length === 0) {
+      role.permissions = [];
+      await this.repo.save(role);
+    } else {
+      const perms = await this.repo.manager.getRepository(Permission).findBy({
+        id: In(uniqueIds),
+      });
+      if (perms.length !== uniqueIds.length) {
+        throw new BadRequestException('存在无效的权限 ID');
+      }
+      role.permissions = perms;
+      await this.repo.save(role);
+    }
+    const reloaded = await this.repo.findOne({
+      where: { id: roleId },
+      relations: ['permissions'],
+    });
+    if (!reloaded) {
+      throw new NotFoundException(`角色不存在: ${roleId}`);
+    }
+    return reloaded;
   }
 
   async findAll(query?: PaginationQuery): Promise<PaginatedResult<Role>> {
