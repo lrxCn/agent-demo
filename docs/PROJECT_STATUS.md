@@ -32,8 +32,8 @@
 | 1-1 | LangGraph State + 基础图结构 | ✅ | 2026-05-09 | chat → 条件边 → ToolNode → chat |
 | 1-2 | 工具注册中心 ToolRegistry | ✅ | 2026-05-09 | `src/tools/registry.py` 单例与筛选 API |
 | 1-3 | 内置工具（天气、计算器等） | ✅ | 2026-05-09 | `calculate` / `get_current_time` + 图绑定 ToolNode |
-| 1-4 | 工具调用重试机制 | ⬜ | | |
-| 1-5 | 超时检测 | ⬜ | | |
+| 1-4 | 工具调用重试机制 | ✅ | 2026-05-09 | `retry.py` 同步重试 + 指数退避 |
+| 1-5 | 超时检测 | ✅ | 2026-05-09 | `tool_node` 单工具总超时 30s（线程池） |
 | 1-6 | 失败回退节点 | ⬜ | | |
 | 1-7 | Redis 短期记忆 (thread_id) | ⬜ | | |
 | 1-8 | Mem0 + Qdrant 长期记忆 (user_id) | ⬜ | | |
@@ -111,3 +111,4 @@
 | 2026-05-09 | Phase 1 Step 1-1：`builder.py` 条件路由 + `ToolNode` + `bind_tools`（工具列表占位，待 1-2/1-3 接入） |
 | 2026-05-09 | Phase 1 Step 1-2：`ToolRegistry` / `ToolMeta`、`get_tools` 筛选与全局 `registry` |
 | 2026-05-09 | Phase 1 Step 1-3：内置 `calculate` / `get_current_time`，`builder` 集成 registry 与 ToolNode |
+| 2026-05-09 | Phase 1 Step 1-4/1-5：`retry.py`、`nodes.tool_node_with_retry`，替换预置 ToolNode |

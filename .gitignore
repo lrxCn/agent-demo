@@ -5,6 +5,8 @@ dist/
 *.sqlite
 __pycache__/
 .venv/
+# LangGraph CLI 本地开发状态（checkpoint / store 等）
+**/.langgraph_api/
 .pytest_cache/
 *.pyc
 .DS_Store
