@@ -27,6 +27,8 @@
 
 ## Phase 1: Agent 核心 (预计 3 天)
 
+**Phase 1 整体：✅ 已完成（2026-05-09）**
+
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
 | 1-1 | LangGraph State + 基础图结构 | ✅ | 2026-05-09 | chat → 条件边 → ToolNode → chat |
@@ -37,7 +39,7 @@
 | 1-6 | 失败回退节点 | ✅ | 2026-05-09 | `after_tools` → `fallback` → END |
 | 1-7 | Redis 短期记忆 (thread_id) | ✅ | 2026-05-09 | `pnpm dev:agentLocal` + `PLAN2CODE_AGENT_CLI_MODE` 时 Redis；`langgraph dev` 不传 checkpointer；`src/cli` + prompt_toolkit |
 | 1-8 | Mem0 + Qdrant 长期记忆 (user_id) | ✅ | 2026-05-09 | `long_term.py` + `chat_node` 检索注入与 `save_memories`；`EMBEDDING_MODEL_DIMS` 与 Qdrant 集合一致 |
-| 1-9 | langgraph-cli 启动并测试 | ⬜ | | |
+| 1-9 | langgraph-cli 启动并测试 | ✅ | 2026-05-09 | `uv run langgraph dev` 默认 API 为 `http://127.0.0.1:2024`（非 8123）；`/threads` + `/threads/{id}/runs` curl 验证通过 |
 
 ## Phase 2: NestJS 后端 (预计 3 天)
 
@@ -116,3 +118,4 @@
 | 2026-05-09 | Phase 1 Step 1-7：`langgraph-checkpoint-redis`、`get_redis_checkpointer` + 图编译接入 Redis checkpointer |
 | 2026-05-09 | 本地 CLI：`pnpm dev:agentLocal`、`PLAN2CODE_AGENT_CLI_MODE` 下 Redis checkpoint；`langgraph dev` 不传 checkpointer；`src/cli` + `prompt-toolkit` |
 | 2026-05-09 | Phase 1 Step 1-8：`memory/long_term.py`（Mem0+Qdrant+`embedding_model_dims`）、`nodes.chat_node` 记忆检索与保存 |
+| 2026-05-09 | Phase 1 Step 1-9：`langgraph dev` 本地验证；`langgraph.json` 已对齐；Phase 1 收尾提交 |
