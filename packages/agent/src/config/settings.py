@@ -1,0 +1,21 @@
+"""项目配置管理"""
+import os
+from dotenv import load_dotenv
+
+# 加载 monorepo 根目录的 .env
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '.env'))
+
+# LLM 配置（与 SiliconFlow OpenAI 兼容接口一致；密钥仍须由 .env 提供）
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+OPENAI_BASE_URL = os.getenv('OPENAI_BASE_URL', 'https://api.siliconflow.cn/v1')
+OPENAI_MODEL_NAME = os.getenv('OPENAI_MODEL_NAME', 'deepseek-ai/DeepSeek-V3.2')
+
+# Redis 配置
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
+
+# Qdrant 配置
+QDRANT_HOST = os.getenv('QDRANT_HOST', 'localhost')
+QDRANT_PORT = int(os.getenv('QDRANT_PORT', '6333'))
+
+# Embedding 配置
+EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'BAAI/bge-large-zh-v1.5')
