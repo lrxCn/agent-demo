@@ -45,7 +45,7 @@
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
-| 2-1 | DAO 抽象层 + SQLite TypeORM | ⬜ | | |
+| 2-1 | DAO 抽象层 + SQLite TypeORM | ✅ | 2026-05-09 | TypeORM better-sqlite3、五类实体与 M2M、DAO 接口 + SQLite 实现、`DaoModule` token 注入 |
 | 2-2 | User 模块 | ⬜ | | |
 | 2-3 | JWT 认证 + 内置 admin/admin | ⬜ | | |
 | 2-4 | Role + Permission RBAC | ⬜ | | |
@@ -119,3 +119,4 @@
 | 2026-05-09 | 本地 CLI：`pnpm dev:agentLocal`、`PLAN2CODE_AGENT_CLI_MODE` 下 Redis checkpoint；`langgraph dev` 不传 checkpointer；`src/cli` + `prompt-toolkit` |
 | 2026-05-09 | Phase 1 Step 1-8：`memory/long_term.py`（Mem0+Qdrant+`embedding_model_dims`）、`nodes.chat_node` 记忆检索与保存 |
 | 2026-05-09 | Phase 1 Step 1-9：`langgraph dev` 本地验证；`langgraph.json` 已对齐；Phase 1 收尾提交 |
+| 2026-05-09 | Phase 2 Step 2-1：TypeORM + SQLite、`*.entity`、DAO 接口与 `sqlite` 实现、`DaoModule`、`main` 创建 `data/` |
