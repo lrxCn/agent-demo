@@ -17,5 +17,7 @@ REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 QDRANT_HOST = os.getenv('QDRANT_HOST', 'localhost')
 QDRANT_PORT = int(os.getenv('QDRANT_PORT', '6333'))
 
-# Embedding 配置
+# Embedding 配置（模型名与向量维度必须配套，供 Mem0/Qdrant 建集合与 embedder 一致）
 EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'BAAI/bge-large-zh-v1.5')
+# 默认对应 BAAI/bge-large-zh-v1.5 的向量维度（1024）；更换 EMBEDDING_MODEL 时请同步修改
+EMBEDDING_MODEL_DIMS = int(os.getenv('EMBEDDING_MODEL_DIMS', '1024'))
