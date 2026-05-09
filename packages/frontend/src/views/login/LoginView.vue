@@ -37,23 +37,31 @@ async function onSubmit(): Promise<void> {
 
 <template>
   <div class="login-page">
-    <a-card class="login-card" title="登录">
-      <a-form ref="formRef" :model="form" layout="vertical">
+    <div class="login-glow login-glow--a" aria-hidden="true" />
+    <div class="login-glow login-glow--b" aria-hidden="true" />
+    <a-card class="login-card" :bordered="false">
+      <template #title>
+        <span class="login-title">Plan2Code</span>
+      </template>
+      <p class="login-subtitle">使用账号登录以继续</p>
+      <a-form ref="formRef" :model="form" layout="vertical" class="login-form">
         <a-form-item
           field="username"
           label="用户名"
           :rules="[{ required: true, message: '请输入用户名' }]"
         >
-          <a-input v-model="form.username" allow-clear placeholder="用户名" />
+          <a-input v-model="form.username" allow-clear placeholder="用户名" size="large" />
         </a-form-item>
         <a-form-item
           field="password"
           label="密码"
           :rules="[{ required: true, message: '请输入密码' }]"
         >
-          <a-input-password v-model="form.password" placeholder="密码" />
+          <a-input-password v-model="form.password" placeholder="密码" size="large" />
         </a-form-item>
-        <a-button type="primary" long :loading="loading" @click="onSubmit">登录</a-button>
+        <a-button type="primary" long size="large" :loading="loading" @click="onSubmit">
+          登录
+        </a-button>
       </a-form>
     </a-card>
   </div>
@@ -61,17 +69,71 @@ async function onSubmit(): Promise<void> {
 
 <style scoped>
 .login-page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   box-sizing: border-box;
+  overflow: hidden;
+  background: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(99, 102, 241, 0.35), transparent 55%),
+    linear-gradient(180deg, #0a0a14 0%, #0f0f23 40%, #0b0b18 100%);
+}
+
+.login-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.login-glow--a {
+  width: 420px;
+  height: 420px;
+  left: -120px;
+  top: 10%;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+.login-glow--b {
+  width: 380px;
+  height: 380px;
+  right: -100px;
+  bottom: 5%;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
 }
 
 .login-card {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 400px;
-  border-radius: 12px;
+  max-width: 420px;
+  border-radius: 16px;
+  background: rgba(22, 22, 40, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(129, 131, 248, 0.2);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.login-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--primary-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.login-subtitle {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--color-text-3, #86909c);
+}
+
+.login-form {
+  margin-top: 8px;
 }
 </style>

@@ -29,6 +29,12 @@ export interface LoginResponseData {
   user: AuthUserSummary
 }
 
+/** POST /auth/refresh 返回的数据 */
+export interface RefreshTokenResponseData {
+  access_token: string
+  expires_in: number
+}
+
 /** 统一响应包装（与后端 ResponseInterceptor 一致） */
 export interface ApiEnvelope<T> {
   code: number

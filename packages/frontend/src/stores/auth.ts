@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { loginApi } from '../api/modules/auth'
+import { login as loginRequest } from '../api/modules/auth'
 import { fetchUserById } from '../api/modules/user'
 import type { AuthUserSummary, UserDetailPayload } from '../types'
 
@@ -61,18 +61,8 @@ export const useAuthStore = defineStore('auth', () => {
     initialized.value = true
   }
 
-  async function login(username: string, password: string): Promise<void> {
-    const data = await loginApi(username, password)
-    token.value = data.access_token
-    refreshToken.value = data.refresh_token
-    user.value = data.user
-    localStorage.setItem(LS_ACCESS, data.access_token)
-    localStorage.setItem(LS_REFRESH, data.refresh_token)
-    persistUserSnapshot(data.user)
-    profileSynced.value = true
-  }
-
-  async function logout(): Promise<void> {
+  /** 清除本地凭证（不跳转），供登出与登录失败回滚共用 */
+  function clearStoredCredentials(): void {
     token.value = ''
     refreshToken.value = ''
     user.value = null
@@ -80,6 +70,28 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(LS_ACCESS)
     localStorage.removeItem(LS_REFRESH)
     localStorage.removeItem(LS_USER)
+  }
+
+  async function login(username: string, password: string): Promise<void> {
+    const data = await loginRequest({ username, password })
+    token.value = data.access_token
+    refreshToken.value = data.refresh_token
+    user.value = data.user
+    localStorage.setItem(LS_ACCESS, data.access_token)
+    localStorage.setItem(LS_REFRESH, data.refresh_token)
+    persistUserSnapshot(data.user)
+    profileSynced.value = false
+    try {
+      await fetchUserInfo()
+    } catch (err) {
+      clearStoredCredentials()
+      throw err
+    }
+  }
+
+  async function logout(): Promise<void> {
+    clearStoredCredentials()
+    window.location.assign('/login')
   }
 
   async function fetchUserInfo(): Promise<void> {
