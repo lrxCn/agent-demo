@@ -1,5 +1,5 @@
 """LangGraph Agent 状态定义"""
-from typing import Annotated, TypedDict
+from typing import Annotated, NotRequired, TypedDict
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -12,3 +12,5 @@ class AgentState(TypedDict):
     mem0_user_id: str
     thread_id: str
     available_frontend_tools: list[str]
+    # 由 memory_search_node 写入；invoke 时可不传
+    retrieved_memories: NotRequired[list[str]]

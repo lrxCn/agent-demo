@@ -2,7 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeout
 
-from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 
@@ -41,11 +41,11 @@ def _tool_message_indicates_failure(content: str) -> bool:
 
 
 def after_tools(state: AgentState) -> str:
-    """工具执行后：若本轮任一 ToolMessage 含失败标记则走 fallback，否则回 chat"""
+    """工具执行后：失败则 fallback；否则回到 memory_search 再进入 chat"""
     for msg in _collect_trailing_tool_messages(state):
         if _tool_message_indicates_failure(msg.content):
             return 'fallback'
-    return 'chat'
+    return 'memory_search'
 
 
 def fallback_node(state: AgentState) -> dict[str, list[BaseMessage]]:
@@ -100,11 +100,26 @@ def _tool_call_parts(tool_call: object) -> tuple[str, dict[str, object], str]:
 
 
 def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
-    """聊天节点"""
+    """聊天节点（使用 memory_search_node 写入的 retrieved_memories 注入系统提示）"""
     tools = registry.get_tools(categories=['builtin'])
     llm = get_llm(tools=tools)
+    messages = list(state['messages'])
+    memories = state.get('retrieved_memories') or []
+
+    if memories:
+        mem_text = '\n'.join([f'- {m}' for m in memories])
+        messages = [
+            SystemMessage(
+                content=(
+                    f'以下是关于该用户的已知信息：\n{mem_text}\n\n'
+                    '请参考这些信息回答问题，但不要主动提及这些记忆。'
+                ),
+            ),
+            *messages,
+        ]
+
     with track_llm_seconds():
-        response = llm.invoke(state['messages'])
+        response = llm.invoke(messages)
     return {'messages': [response]}
 
 

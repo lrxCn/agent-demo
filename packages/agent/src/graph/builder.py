@@ -5,6 +5,7 @@ from langchain_core.messages import AIMessage
 
 from langgraph.graph import END, START, StateGraph
 
+from src.graph.memory_nodes import memory_save_node, memory_search_node
 from src.graph.nodes import after_tools, chat_node, fallback_node, tool_node_with_retry
 from src.graph.state import AgentState
 from src.tools.builtin import register_builtin_tools
@@ -20,7 +21,7 @@ register_builtin_tools()
 
 
 def should_continue(state: AgentState) -> str:
-    """判断是否需要调用工具"""
+    """判断 memory_save 之后是否需要调用工具（依据 chat 刚追加的最后一条消息）"""
     last_message = state['messages'][-1]
     if isinstance(last_message, AIMessage) and last_message.tool_calls:
         return 'tools'
@@ -28,12 +29,16 @@ def should_continue(state: AgentState) -> str:
 
 
 builder = StateGraph(AgentState)
+builder.add_node('memory_search', memory_search_node)
 builder.add_node('chat', chat_node)
+builder.add_node('memory_save', memory_save_node)
 builder.add_node('tools', tool_node_with_retry)
 builder.add_node('fallback', fallback_node)
-builder.add_edge(START, 'chat')
+builder.add_edge(START, 'memory_search')
+builder.add_edge('memory_search', 'chat')
+builder.add_edge('chat', 'memory_save')
 builder.add_conditional_edges(
-    'chat',
+    'memory_save',
     should_continue,
     {
         'tools': 'tools',
@@ -45,7 +50,7 @@ builder.add_conditional_edges(
     after_tools,
     {
         'fallback': 'fallback',
-        'chat': 'chat',
+        'memory_search': 'memory_search',
     },
 )
 builder.add_edge('fallback', END)
