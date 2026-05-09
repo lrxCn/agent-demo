@@ -3,16 +3,20 @@ import { Reflector } from '@nestjs/core';
 import { JwtUser } from '../../auth/types/jwt-user.types';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 
-/** 校验当前用户是否具备路由要求的全部权限（含 `*` 通配） */
+/**
+ * 校验当前用户是否具备路由要求的全部权限。
+ * `request.user` 由 JwtStrategy.validate 每次请求从库加载，permissionCodes
+ * 为其所有角色关联权限的并集；拥有通配码 `*`（如内置 admin 角色）时跳过细粒度校验。
+ */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const required = this.reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const required = this.reflector.getAllAndOverride<string[]>(
+      PERMISSIONS_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     if (!required || required.length === 0) {
       return true;
     }

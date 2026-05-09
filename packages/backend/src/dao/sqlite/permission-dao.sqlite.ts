@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Permission } from '../../permission/permission.entity';
-import { PaginatedResult, PaginationQuery } from '../interfaces/base-dao.interface';
+import {
+  PaginatedResult,
+  PaginationQuery,
+} from '../interfaces/base-dao.interface';
 import { IPermissionDao } from '../interfaces/permission-dao.interface';
 import { resolvePagination, toPaginatedResult } from './pagination';
 
@@ -21,6 +24,12 @@ export class PermissionDaoSqlite implements IPermissionDao {
     return this.repo.findOne({ where: { code } });
   }
 
+  async findAllOrdered(): Promise<Permission[]> {
+    return this.repo.find({
+      order: { groupName: 'ASC', code: 'ASC' },
+    });
+  }
+
   async findAll(query?: PaginationQuery): Promise<PaginatedResult<Permission>> {
     const { page, pageSize, skip, keyword } = resolvePagination(query);
     const qb = this.repo.createQueryBuilder('p');
@@ -30,7 +39,12 @@ export class PermissionDaoSqlite implements IPermissionDao {
       });
     }
     const total = await qb.getCount();
-    const items = await qb.orderBy('p.groupName', 'ASC').addOrderBy('p.code', 'ASC').skip(skip).take(pageSize).getMany();
+    const items = await qb
+      .orderBy('p.groupName', 'ASC')
+      .addOrderBy('p.code', 'ASC')
+      .skip(skip)
+      .take(pageSize)
+      .getMany();
     return toPaginatedResult(items, total, page, pageSize);
   }
 
