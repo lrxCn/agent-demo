@@ -1,2 +1,12 @@
-/** 占位：后续在此定义并导出 Vue Router 实例 */
-export {}
+import { createRouter, createWebHistory } from 'vue-router'
+import { routes } from './routes'
+import { setupRouterGuard } from './guard'
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+setupRouterGuard(router)
+
+export default router

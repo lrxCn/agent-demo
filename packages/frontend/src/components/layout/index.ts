@@ -1,2 +1,1 @@
-/** 占位：后续在此聚合布局组件导出 */
-export {}
+export { default as AppLayout } from './AppLayout.vue'

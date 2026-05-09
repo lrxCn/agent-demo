@@ -59,7 +59,7 @@
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
-| 3-1 | Arco Design + 主题 + 布局 | ⬜ | | |
+| 3-1 | Arco Design + 主题 + 布局 | ✅ | 2026-05-09 | 深色主题、`AppLayout`、Pinia `auth`、路由与基础守卫、占位页面与极简登录联调布局 |
 | 3-2 | 登录页面 + Token 管理 | ⬜ | | |
 | 3-3 | 路由权限守卫 + 动态菜单 | ⬜ | | |
 | 3-4 | 账号管理页面 | ⬜ | | |
@@ -128,3 +128,4 @@
 | 2026-05-09 | Phase 2 Step 2-5：`StudentModule`（CRUD + 批量创建/删除）、JWT + `student:*` 权限、`IStudentDao` 扩展 |
 | 2026-05-09 | Phase 2 Step 2-6：`AgentModule`（`POST /agent/chat` SSE）、`LANGGRAPH_API_URL`、`SkipResponseWrap` + `ResponseInterceptor` 跳过包装 |
 | 2026-05-09 | Phase 2 Step 2-7：`WsModule` / `AppGateway`（Socket.IO `/ws`）、`UserFrontendToolsService` 与 `FrontendToolResultBus`、`AgentService` 合并缓存工具名；Phase 2 收尾提交 |
+| 2026-05-09 | Phase 3 Step 3-1：Arco 深色主题、`theme.css`、`AppLayout`（侧栏/顶栏/`router-view`）、`auth` store、`router`+`routes`+`guard`、占位视图与可登录验证布局（需后端 `admin/admin`） |

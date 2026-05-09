@@ -1,4 +1,5 @@
 import axios, { AxiosHeaders, type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import type { ApiEnvelope } from '../types'
 
 const request = axios.create({
   baseURL: '/api/v1',
@@ -27,5 +28,17 @@ request.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+/** 断言 axios 拦截器返回的统一包装体并取出 data */
+export function unwrapApiData<T>(body: unknown): T {
+  if (typeof body !== 'object' || body === null) {
+    throw new Error('响应格式错误')
+  }
+  const env = body as ApiEnvelope<T>
+  if (env.code !== 0) {
+    throw new Error(env.message || '请求失败')
+  }
+  return env.data
+}
 
 export default request
