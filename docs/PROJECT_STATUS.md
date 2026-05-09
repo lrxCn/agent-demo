@@ -72,7 +72,7 @@
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
-| 4-1 | 浮动聊天气泡组件 | ⬜ | | |
+| 4-1 | 浮动聊天气泡组件 | ✅ | 2026-05-09 | `ChatBubble.vue`、`stores/chat`、markdown-it、AppLayout 挂载 |
 | 4-2 | SSE 流式聊天 | ⬜ | | |
 | 4-3 | 前端工具 schema 定义 (Agent 端) | ⬜ | | |
 | 4-4 | 结构化输出 → WebSocket → 前端执行 | ⬜ | | |
@@ -136,3 +136,4 @@
 | 2026-05-09 | Phase 3 Step 3-4：`api/modules/user` 列表/增删改/分配角色 + 角色下拉；`UserListView` 表格与弹窗、`hasPermission` 控制按钮 |
 | 2026-05-09 | Phase 3 Step 3-5：`api/modules/role` + `permission`；`RoleListView` 增删改与按分组分配权限；角色列表 DTO 附带权限摘要；`user` 复用角色分页 API |
 | 2026-05-09 | Phase 3 Step 3-6：`api/modules/student`；`StudentListView` 分页搜索、表格排序、增删改、批量删除/导入；Phase 3 收尾 |
+| 2026-05-09 | Phase 4 Step 4-1：`ChatBubble.vue`、`stores/chat`、markdown-it、AppLayout 挂载浮动对话与模拟回复 |

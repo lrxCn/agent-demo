@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ChatBubble from '../chat/ChatBubble.vue'
 import { useAuthStore } from '../../stores/auth'
 import { usePermissionStore } from '../../stores/permission'
 
@@ -35,47 +36,55 @@ const displayName = computed(() => auth.user?.nickname || auth.user?.username ||
 </script>
 
 <template>
-  <a-layout class="app-shell">
-    <a-layout-sider v-model:collapsed="collapsed" collapsible :width="220" breakpoint="lg" class="app-sider">
-      <div class="logo-wrap">
-        <span class="logo-text">Plan2Code</span>
-      </div>
-      <a-menu :selected-keys="selectedKeys" auto-open-selected @menu-item-click="onMenuItemClick">
-        <a-menu-item v-for="item in permission.visibleMenuItems" :key="item.path">
-          <template #icon>
-            <component :is="item.icon" />
-          </template>
-          {{ item.title }}
-        </a-menu-item>
-      </a-menu>
-    </a-layout-sider>
-    <a-layout>
-      <a-layout-header class="app-header">
-        <a-breadcrumb class="header-breadcrumb">
-          <a-breadcrumb-item v-for="(bc, index) in breadcrumbs" :key="bc.path + bc.title">
-            <router-link v-if="index < breadcrumbs.length - 1" :to="bc.path">{{ bc.title }}</router-link>
-            <template v-else>{{ bc.title }}</template>
-          </a-breadcrumb-item>
-        </a-breadcrumb>
-        <div class="header-actions">
-          <a-dropdown trigger="click">
-            <a-button type="text" class="user-trigger">
-              {{ displayName }}
-            </a-button>
-            <template #content>
-              <a-doption @click="handleLogout">退出登录</a-doption>
-            </template>
-          </a-dropdown>
+  <div class="app-layout-root">
+    <a-layout class="app-shell">
+      <a-layout-sider v-model:collapsed="collapsed" collapsible :width="220" breakpoint="lg" class="app-sider">
+        <div class="logo-wrap">
+          <span class="logo-text">Plan2Code</span>
         </div>
-      </a-layout-header>
-      <a-layout-content class="app-main">
-        <router-view />
-      </a-layout-content>
+        <a-menu :selected-keys="selectedKeys" auto-open-selected @menu-item-click="onMenuItemClick">
+          <a-menu-item v-for="item in permission.visibleMenuItems" :key="item.path">
+            <template #icon>
+              <component :is="item.icon" />
+            </template>
+            {{ item.title }}
+          </a-menu-item>
+        </a-menu>
+      </a-layout-sider>
+      <a-layout>
+        <a-layout-header class="app-header">
+          <a-breadcrumb class="header-breadcrumb">
+            <a-breadcrumb-item v-for="(bc, index) in breadcrumbs" :key="bc.path + bc.title">
+              <router-link v-if="index < breadcrumbs.length - 1" :to="bc.path">{{ bc.title }}</router-link>
+              <template v-else>{{ bc.title }}</template>
+            </a-breadcrumb-item>
+          </a-breadcrumb>
+          <div class="header-actions">
+            <a-dropdown trigger="click">
+              <a-button type="text" class="user-trigger">
+                {{ displayName }}
+              </a-button>
+              <template #content>
+                <a-doption @click="handleLogout">退出登录</a-doption>
+              </template>
+            </a-dropdown>
+          </div>
+        </a-layout-header>
+        <a-layout-content class="app-main">
+          <router-view />
+        </a-layout-content>
+      </a-layout>
     </a-layout>
-  </a-layout>
+    <ChatBubble />
+  </div>
 </template>
 
 <style scoped>
+.app-layout-root {
+  position: relative;
+  min-height: 100vh;
+}
+
 .app-shell {
   min-height: 100vh;
 }
