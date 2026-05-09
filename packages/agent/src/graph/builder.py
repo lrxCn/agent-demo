@@ -7,19 +7,24 @@ from langgraph.prebuilt import ToolNode
 
 from src.config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL_NAME
 from src.graph.state import AgentState
+from src.tools.builtin import register_builtin_tools
+from src.tools.registry import registry
 
-# Step 2-3 起由 ToolRegistry 注入；当前为空列表，图结构已就绪
-_TOOLS: list[BaseTool] = []
+# 模块加载时注册内置工具
+register_builtin_tools()
 
 
-def get_llm() -> ChatOpenAI:
-    """获取 LLM 实例（配置来自 settings）"""
-    return ChatOpenAI(
+def get_llm(tools: list[BaseTool] | None = None) -> ChatOpenAI:
+    """获取 LLM 实例，可选绑定工具"""
+    llm = ChatOpenAI(
         model=OPENAI_MODEL_NAME,
         base_url=OPENAI_BASE_URL,
         api_key=OPENAI_API_KEY,
         temperature=0,
     )
+    if tools:
+        llm = llm.bind_tools(tools)
+    return llm
 
 
 def should_continue(state: AgentState) -> str:
@@ -31,13 +36,15 @@ def should_continue(state: AgentState) -> str:
 
 
 def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
-    """聊天节点：绑定工具并调用 LLM"""
-    llm = get_llm().bind_tools(_TOOLS)
+    """聊天节点：按需绑定内置工具并调用 LLM"""
+    tools = registry.get_tools(categories=['builtin'])
+    llm = get_llm(tools=tools)
     response = llm.invoke(state['messages'])
     return {'messages': [response]}
 
 
-tool_node = ToolNode(_TOOLS)
+_tool_list = registry.get_all_tools()
+tool_node = ToolNode(_tool_list)
 
 builder = StateGraph(AgentState)
 builder.add_node('chat', chat_node)
