@@ -50,7 +50,7 @@
 | 2-3 | JWT 认证 + 内置 admin/admin | ✅ | 2026-05-09 | `AuthModule`（login/refresh、Passport JWT）、守卫与装饰器、环境变量签发 access/refresh、`AdminBootstrapService` 种子 admin + `*` 权限与角色、`UserController` 受 `JwtAuthGuard` 保护 |
 | 2-4 | Role + Permission RBAC | ✅ | 2026-05-09 | PermissionModule（预置权限 + GET 分组列表）、RoleModule（CRUD + 分配权限）、User 路由挂 PermissionsGuard、`IPermissionDao.findAllOrdered` |
 | 2-5 | Student 模块 (CRUD+批量) | ✅ | 2026-05-09 | `StudentModule`、DTO、DAO 扩展 `findByStudentNo` / `deleteMany`、keyword 仅姓名/学号 |
-| 2-6 | Agent 代理层 (SSE 流式转发) | ⬜ | | |
+| 2-6 | Agent 代理层 (SSE 流式转发) | ✅ | 2026-05-09 | `AgentModule` + `HttpService` 转发 LangGraph `/threads` 与 `/runs/stream`；`messages-tuple`+`updates` 映射 token / 前端 tool_call；`SkipResponseWrap` 避免 SSE 被 JSON 包装 |
 | 2-7 | WebSocket Gateway | ⬜ | | |
 
 ## Phase 3: 前端基础页面 (预计 3 天)
@@ -124,3 +124,4 @@
 | 2026-05-09 | Phase 2 Step 2-3：JWT 登录与刷新、`JwtStrategy`、通用守卫/装饰器、DAO 扩展（`findByCode` / `findByName` / `setPermissions`）、内置 admin 种子、`tsconfig` 关闭 declaration 以规避 PassportStrategy 声明文件问题 |
 | 2026-05-09 | Phase 2 Step 2-4：`PermissionModule` / `RoleModule`、预置权限种子、`IPermissionDao.findAllOrdered`、`UserController` 细粒度权限、`PermissionsGuard` 文档说明 |
 | 2026-05-09 | Phase 2 Step 2-5：`StudentModule`（CRUD + 批量创建/删除）、JWT + `student:*` 权限、`IStudentDao` 扩展 |
+| 2026-05-09 | Phase 2 Step 2-6：`AgentModule`（`POST /agent/chat` SSE）、`LANGGRAPH_API_URL`、`SkipResponseWrap` + `ResponseInterceptor` 跳过包装 |
