@@ -9,6 +9,7 @@ import { AdminBootstrapService } from './bootstrap/admin-bootstrap.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { AgentModule } from './agent/agent.module';
+import { WsModule } from './common/gateways/ws.module';
 import { DaoModule } from './dao/dao.module';
 import { PermissionModule } from './permission/permission.module';
 import { RoleModule } from './role/role.module';
@@ -34,6 +35,7 @@ import { UserModule } from './user/user.module';
     AuthModule,
     UserModule,
     StudentModule,
+    WsModule,
     AgentModule,
   ],
   controllers: [AppController],

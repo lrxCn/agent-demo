@@ -43,6 +43,8 @@
 
 ## Phase 2: NestJS 后端 (预计 3 天)
 
+**Phase 2 整体：✅ 已完成（2026-05-09）**
+
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
 | 2-1 | DAO 抽象层 + SQLite TypeORM | ✅ | 2026-05-09 | TypeORM better-sqlite3、五类实体与 M2M、DAO 接口 + SQLite 实现、`DaoModule` token 注入 |
@@ -51,7 +53,7 @@
 | 2-4 | Role + Permission RBAC | ✅ | 2026-05-09 | PermissionModule（预置权限 + GET 分组列表）、RoleModule（CRUD + 分配权限）、User 路由挂 PermissionsGuard、`IPermissionDao.findAllOrdered` |
 | 2-5 | Student 模块 (CRUD+批量) | ✅ | 2026-05-09 | `StudentModule`、DTO、DAO 扩展 `findByStudentNo` / `deleteMany`、keyword 仅姓名/学号 |
 | 2-6 | Agent 代理层 (SSE 流式转发) | ✅ | 2026-05-09 | `AgentModule` + `HttpService` 转发 LangGraph `/threads` 与 `/runs/stream`；`messages-tuple`+`updates` 映射 token / 前端 tool_call；`SkipResponseWrap` 避免 SSE 被 JSON 包装 |
-| 2-7 | WebSocket Gateway | ⬜ | | |
+| 2-7 | WebSocket Gateway | ✅ | 2026-05-09 | `WsModule` + `/ws` 命名空间、JWT（query/auth/Authorization）、在线 Map、`tools:update` 缓存、`tool:result` 总线、RTC 占位；`AgentService` 合并 WebSocket 工具列表 |
 
 ## Phase 3: 前端基础页面 (预计 3 天)
 
@@ -125,3 +127,4 @@
 | 2026-05-09 | Phase 2 Step 2-4：`PermissionModule` / `RoleModule`、预置权限种子、`IPermissionDao.findAllOrdered`、`UserController` 细粒度权限、`PermissionsGuard` 文档说明 |
 | 2026-05-09 | Phase 2 Step 2-5：`StudentModule`（CRUD + 批量创建/删除）、JWT + `student:*` 权限、`IStudentDao` 扩展 |
 | 2026-05-09 | Phase 2 Step 2-6：`AgentModule`（`POST /agent/chat` SSE）、`LANGGRAPH_API_URL`、`SkipResponseWrap` + `ResponseInterceptor` 跳过包装 |
+| 2026-05-09 | Phase 2 Step 2-7：`WsModule` / `AppGateway`（Socket.IO `/ws`）、`UserFrontendToolsService` 与 `FrontendToolResultBus`、`AgentService` 合并缓存工具名；Phase 2 收尾提交 |

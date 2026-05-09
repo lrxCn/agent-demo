@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import type { Readable } from 'stream';
 
 import { JwtUser } from '../auth/types/jwt-user.types';
+import { UserFrontendToolsService } from '../common/gateways/user-frontend-tools.service';
 import { ChatDto } from './dto/chat.dto';
 
 /** 下发给前端的 SSE 业务负载（与 API_CONTRACTS 对齐，含 error 便于排错） */
@@ -27,7 +28,15 @@ export class AgentService {
   constructor(
     private readonly http: HttpService,
     private readonly config: ConfigService,
+    private readonly userFrontendTools: UserFrontendToolsService,
   ) {}
+
+  /** WebSocket 缓存与请求体中的工具名合并（去重），供 LangGraph 注入前端工具 */
+  private mergeAvailableFrontendTools(userId: string, dtoTools: string[] | undefined): string[] {
+    const fromWs = this.userFrontendTools.getTools(userId);
+    const fromDto = dtoTools ?? [];
+    return [...new Set([...fromWs, ...fromDto])];
+  }
 
   private getBaseUrl(): string {
     const raw = this.config.get<string>('LANGGRAPH_API_URL')?.trim();
@@ -64,7 +73,8 @@ export class AgentService {
     user: JwtUser,
   ): AsyncGenerator<AgentChatStreamPayload, void, undefined> {
     const base = this.getBaseUrl();
-    const available = new Set(dto.available_tools ?? []);
+    const mergedTools = this.mergeAvailableFrontendTools(user.id, dto.available_tools);
+    const available = new Set(mergedTools);
     const emittedToolKeys = new Set<string>();
     let accumulatedText = '';
 
@@ -72,7 +82,7 @@ export class AgentService {
       messages: [{ role: 'user', content: dto.message }],
       mem0_user_id: user.id,
       thread_id: threadId,
-      available_frontend_tools: dto.available_tools ?? [],
+      available_frontend_tools: mergedTools,
     };
 
     const body = {
