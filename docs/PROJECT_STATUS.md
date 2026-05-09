@@ -19,7 +19,7 @@
 | 0-2 | 创建 .cursor/rules/ 规则文件 | ✅ | 已由 Antigravity 生成 | |
 | 0-3 | 创建 docs/ 文档 | ✅ | 已由 Antigravity 生成 | |
 | 0-4 | 初始化 NestJS backend | ✅ | 2026-05-09 | Nest 10 + 依赖与目录占位 |
-| 0-5 | 初始化 Vue3 frontend | ⬜ | | |
+| 0-5 | 初始化 Vue3 frontend | ✅ | 2026-05-09 | Vite + Arco 按需、代理、axios 封装与目录占位 |
 | 0-6 | 初始化 Python agent (uv + langgraph) | ⬜ | | |
 | 0-7 | 配置 .env 环境变量 | ⬜ | | |
 
@@ -103,3 +103,4 @@
 | 2026-05-09 | 项目初始化，由 Antigravity 生成规则文件和文档 |
 | 2026-05-09 | Phase 0 Step 0-1：初始化 monorepo、pnpm workspace、.gitignore、packages/、git 仓库 |
 | 2026-05-09 | Phase 0 Step 0-4：`packages/backend` NestJS 脚手架、核心/WebSocket/HTTP 依赖、模块目录占位、`ConfigModule` |
+| 2026-05-09 | Phase 0 Step 0-5：`packages/frontend` Vite Vue-TS、Arco/Pinia/Router/axios、Vite 代理与 `src/api/request.ts` |
