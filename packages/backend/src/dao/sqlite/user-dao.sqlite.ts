@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+import { Role } from '../../role/role.entity';
 import { User } from '../../user/user.entity';
 import { PaginatedResult, PaginationQuery } from '../interfaces/base-dao.interface';
 import { IUserDao } from '../interfaces/user-dao.interface';
@@ -15,6 +20,46 @@ export class UserDaoSqlite implements IUserDao {
 
   async findById(id: string): Promise<User | null> {
     return this.repo.findOne({ where: { id } });
+  }
+
+  async findByUsername(username: string): Promise<User | null> {
+    return this.repo.findOne({ where: { username } });
+  }
+
+  async findWithRolesById(id: string): Promise<User | null> {
+    return this.repo.findOne({ where: { id }, relations: ['roles'] });
+  }
+
+  async assignRoles(userId: string, roleIds: string[]): Promise<User> {
+    const user = await this.repo.findOne({
+      where: { id: userId },
+      relations: ['roles'],
+    });
+    if (!user) {
+      throw new NotFoundException(`用户不存在: ${userId}`);
+    }
+    const uniqueIds = [...new Set(roleIds)];
+    if (uniqueIds.length === 0) {
+      user.roles = [];
+      await this.repo.save(user);
+    } else {
+      const roles = await this.repo.manager.getRepository(Role).findBy({
+        id: In(uniqueIds),
+      });
+      if (roles.length !== uniqueIds.length) {
+        throw new BadRequestException('存在无效的角色 ID');
+      }
+      user.roles = roles;
+      await this.repo.save(user);
+    }
+    const reloaded = await this.repo.findOne({
+      where: { id: userId },
+      relations: ['roles'],
+    });
+    if (!reloaded) {
+      throw new NotFoundException(`用户不存在: ${userId}`);
+    }
+    return reloaded;
   }
 
   async findAll(query?: PaginationQuery): Promise<PaginatedResult<User>> {
