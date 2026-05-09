@@ -35,7 +35,7 @@
 | 1-4 | 工具调用重试机制 | ✅ | 2026-05-09 | `retry.py` 同步重试 + 指数退避 |
 | 1-5 | 超时检测 | ✅ | 2026-05-09 | `tool_node` 单工具总超时 30s（线程池） |
 | 1-6 | 失败回退节点 | ✅ | 2026-05-09 | `after_tools` → `fallback` → END |
-| 1-7 | Redis 短期记忆 (thread_id) | ⬜ | | |
+| 1-7 | Redis 短期记忆 (thread_id) | ✅ | 2026-05-09 | `pnpm dev:agentLocal` + `PLAN2CODE_AGENT_CLI_MODE` 时 Redis；`langgraph dev` 不传 checkpointer；`src/cli` + prompt_toolkit |
 | 1-8 | Mem0 + Qdrant 长期记忆 (user_id) | ⬜ | | |
 | 1-9 | langgraph-cli 启动并测试 | ⬜ | | |
 
@@ -113,3 +113,5 @@
 | 2026-05-09 | Phase 1 Step 1-3：内置 `calculate` / `get_current_time`，`builder` 集成 registry 与 ToolNode |
 | 2026-05-09 | Phase 1 Step 1-4/1-5：`retry.py`、`nodes.tool_node_with_retry`，替换预置 ToolNode |
 | 2026-05-09 | Phase 1 Step 1-6：`after_tools`、`fallback_node`，工具失败则 `fallback` → END |
+| 2026-05-09 | Phase 1 Step 1-7：`langgraph-checkpoint-redis`、`get_redis_checkpointer` + 图编译接入 Redis checkpointer |
+| 2026-05-09 | 本地 CLI：`pnpm dev:agentLocal`、`PLAN2CODE_AGENT_CLI_MODE` 下 Redis checkpoint；`langgraph dev` 不传 checkpointer；`src/cli` + `prompt-toolkit` |

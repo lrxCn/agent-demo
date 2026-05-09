@@ -1,4 +1,6 @@
 """LangGraph 图构建"""
+import os
+
 from langchain_core.messages import AIMessage
 
 from langgraph.graph import END, START, StateGraph
@@ -6,6 +8,12 @@ from langgraph.graph import END, START, StateGraph
 from src.graph.nodes import after_tools, chat_node, fallback_node, tool_node_with_retry
 from src.graph.state import AgentState
 from src.tools.builtin import register_builtin_tools
+
+
+def _is_cli_mode() -> bool:
+    """本地 CLI（pnpm dev:agentLocal）为 true；langgraph dev 等不设变量则为 false。"""
+    v = os.environ.get('PLAN2CODE_AGENT_CLI_MODE', '').strip().lower()
+    return v in ('1', 'true', 'yes', 'on')
 
 # 模块加载时注册内置工具
 register_builtin_tools()
@@ -42,4 +50,10 @@ builder.add_conditional_edges(
 )
 builder.add_edge('fallback', END)
 
-graph = builder.compile()
+if _is_cli_mode():
+    # 仅本地 CLI 使用 Redis；langgraph dev 由运行时接管 checkpoint，此处不可注入
+    from src.memory.short_term import get_redis_checkpointer
+
+    graph = builder.compile(checkpointer=get_redis_checkpointer())
+else:
+    graph = builder.compile()

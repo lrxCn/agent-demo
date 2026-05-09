@@ -7,6 +7,7 @@ from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 
 from src.config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL_NAME
+from src.graph.invoke_timing import track_llm_seconds, track_tool_seconds
 from src.graph.retry import invoke_tool_with_retry
 from src.graph.state import AgentState
 from src.tools.registry import registry
@@ -102,7 +103,8 @@ def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
     """聊天节点"""
     tools = registry.get_tools(categories=['builtin'])
     llm = get_llm(tools=tools)
-    response = llm.invoke(state['messages'])
+    with track_llm_seconds():
+        response = llm.invoke(state['messages'])
     return {'messages': [response]}
 
 
@@ -136,15 +138,16 @@ def tool_node_with_retry(state: AgentState) -> dict[str, list[BaseMessage]]:
         pool = ThreadPoolExecutor(max_workers=1)
         try:
             future = pool.submit(_run_tool)
-            try:
-                results.append(future.result(timeout=TIMEOUT_SECONDS))
-            except FuturesTimeout:
-                results.append(
-                    ToolMessage(
-                        content=f'工具 {tool_name} 调用超时（{TIMEOUT_SECONDS} 秒）',
-                        tool_call_id=tool_call_id,
-                    ),
-                )
+            with track_tool_seconds():
+                try:
+                    results.append(future.result(timeout=TIMEOUT_SECONDS))
+                except FuturesTimeout:
+                    results.append(
+                        ToolMessage(
+                            content=f'工具 {tool_name} 调用超时（{TIMEOUT_SECONDS} 秒）',
+                            tool_call_id=tool_call_id,
+                        ),
+                    )
         finally:
             # 避免 with 退出时 wait=True 一直等到 sleep 线程自然结束
             pool.shutdown(wait=False, cancel_futures=True)

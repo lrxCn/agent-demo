@@ -4,6 +4,7 @@
   "scripts": {
     "dev:frontend": "pnpm -C packages/frontend dev",
     "dev:backend": "pnpm -C packages/backend start:dev",
-    "dev:agent": "cd packages/agent && uv run langgraph dev --port 8123"
+    "dev:agent": "cd packages/agent && uv run langgraph dev --port 8123",
+    "dev:agentLocal": "cd packages/agent && PLAN2CODE_AGENT_CLI_MODE=1 PYTHONIOENCODING=utf-8 uv run python -m src.cli"
   }
 }
