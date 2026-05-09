@@ -1,0 +1,85 @@
+---
+description: NestJS 后端编码规范和 DAO 抽象层设计模式
+globs: "packages/backend/**/*.ts"
+alwaysApply: false
+---
+
+# NestJS 后端编码规范
+
+## 项目结构
+```
+packages/backend/src/
+├── auth/            # JWT 认证模块
+├── user/            # 用户管理
+├── role/            # 角色管理
+├── permission/      # 权限管理
+├── student/         # 学生管理
+├── agent/           # Agent 代理层（转发到 LangGraph）
+├── knowledge/       # 知识库管理
+├── rtc/             # WebRTC 信令
+├── dao/             # DAO 抽象层
+│   ├── interfaces/  # DAO 接口定义
+│   ├── sqlite/      # SQLite 实现
+│   └── dao.module.ts
+└── common/          # 通用模块（guards, filters, interceptors）
+```
+
+## DAO 抽象层（核心设计）
+```typescript
+// 1. 在 dao/interfaces/ 定义接口
+export interface IUserDao {
+  findById(id: string): Promise<User | null>;
+  create(data: CreateUserDto): Promise<User>;
+  // ...
+}
+
+// 2. 在 dao/sqlite/ 实现接口
+@Injectable()
+export class UserDaoSqlite implements IUserDao { ... }
+
+// 3. 在 dao.module.ts 通过 token 注入
+{ provide: 'IUserDao', useClass: UserDaoSqlite }
+
+// 4. 在 service 中通过 @Inject 使用
+constructor(@Inject('IUserDao') private userDao: IUserDao) {}
+```
+
+> 切换数据库只需：新建实现类 + 修改 dao.module.ts 的 useClass
+
+## 模块规范
+每个业务模块包含：
+- `*.entity.ts` - TypeORM 实体
+- `*.dto.ts` - 请求/响应 DTO
+- `*.service.ts` - 业务逻辑
+- `*.controller.ts` - 路由控制器
+- `*.module.ts` - 模块定义
+
+## API 规范
+- RESTful 风格：GET/POST/PUT/DELETE
+- 统一响应格式：`{ code: 0, data: {}, message: 'ok' }`
+- 分页：`{ items: [], total: number, page: number, pageSize: number }`
+- 路由前缀：`/api/v1/`
+
+## 认证和权限
+```typescript
+// JWT Guard 保护路由
+@UseGuards(JwtAuthGuard)
+
+// 角色守卫
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
+
+// 权限守卫
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions('student:create')
+```
+
+## Agent 代理层
+- 使用 HttpService (axios) 转发请求到 LangGraph API
+- SSE 流式转发：NestJS 接收 LangGraph 的流 → 转发给前端
+- WebSocket 用于前端工具调用回传
+
+## 禁止事项
+- ❌ 不要在 controller 中写业务逻辑，放到 service
+- ❌ 不要绕过 DAO 层直接操作数据库
+- ❌ 不要在 service 中直接使用 TypeORM Repository，通过 DAO 接口

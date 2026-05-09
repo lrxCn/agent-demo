@@ -1,0 +1,9 @@
+{
+  "name": "agent-demo",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "pnpm -C packages/frontend dev",
+    "dev:backend": "pnpm -C packages/backend start:dev",
+    "dev:agent": "cd packages/agent && uv run langgraph dev"
+  }
+}

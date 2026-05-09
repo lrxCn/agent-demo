@@ -1,0 +1,72 @@
+---
+description: Python LangGraph Agent 层编码规范和设计模式
+globs: "packages/agent/**/*.py"
+alwaysApply: false
+---
+
+# Agent 层编码规范
+
+## 项目结构
+```
+packages/agent/src/
+├── graph/           # LangGraph 图定义
+│   ├── state.py     # State 类型定义
+│   ├── nodes.py     # 图节点
+│   └── builder.py   # 图构建
+├── tools/           # 工具
+│   ├── registry.py  # 工具注册中心
+│   ├── builtin/     # 内置工具
+│   └── frontend/    # 前端工具 schema
+├── memory/          # 记忆模块
+│   ├── short_term.py  # Redis 短期记忆
+│   └── long_term.py   # Mem0 长期记忆
+├── rag/             # RAG 检索
+└── config/          # 配置管理
+```
+
+## 设计模式
+
+### 工具注册中心
+```python
+# 所有工具通过 ToolRegistry 注册，支持按类别/标签筛选
+from tools.registry import ToolRegistry
+registry = ToolRegistry()
+registry.register(tool, category="builtin", tags=["math"])
+tools = registry.get_tools(categories=["builtin"])
+```
+
+### State 定义
+```python
+# 始终在 state.py 中集中定义，不要分散
+class AgentState(TypedDict):
+    messages: Annotated[list[BaseMessage], add_messages]
+    mem0_user_id: str
+    thread_id: str
+    available_frontend_tools: list[str]  # 前端当前可用工具
+```
+
+### 异步优先
+- 所有 I/O 操作使用 async/await
+- 工具函数使用 @tool 装饰器，支持 async
+
+### 错误处理
+- 工具调用失败 → 重试（最多 3 次，指数退避）
+- 重试全部失败 → fallback 节点，返回友好提示
+- 超时 → asyncio.wait_for，30 秒超时
+
+### LLM 调用
+```python
+# 使用 ChatOpenAI 兼容接口
+from langchain_openai import ChatOpenAI
+llm = ChatOpenAI(
+    model=os.getenv("OPENAI_MODEL_NAME"),
+    base_url=os.getenv("OPENAI_BASE_URL"),
+    api_key=os.getenv("OPENAI_API_KEY"),
+    temperature=0,  # Agent 场景固定为 0
+)
+```
+
+## 禁止事项
+- ❌ 不要在节点函数中直接创建 LLM 实例，使用配置模块
+- ❌ 不要把所有工具都注入 prompt，使用 ToolRegistry 按需加载
+- ❌ 不要忽略 Mem0 的 user_id，长期记忆必须绑定用户

@@ -1,0 +1,59 @@
+---
+description: 项目全局上下文，AI Agent 全栈演示项目的技术栈和架构概述
+globs: "**/*"
+alwaysApply: true
+---
+
+# 项目上下文
+
+## 项目名称
+AI Agent Demo - 全栈 AI Agent 能力展示项目
+
+## 技术栈
+
+### Agent 层 (packages/agent/)
+- Python 3.11+
+- LangGraph + langgraph-cli
+- LangChain (OpenAI 兼容接口)
+- Mem0 (长期记忆)
+- Qdrant (向量数据库，本地 OrbStack 容器)
+- Redis (短期记忆/checkpointer，本地 OrbStack 容器)
+- uv (包管理)
+
+### 后端层 (packages/backend/)
+- NestJS 10+
+- TypeORM + SQLite（DAO 抽象层，便于未来换库）
+- JWT 认证 (Passport)
+- WebSocket Gateway (Socket.io)
+- pnpm (包管理)
+
+### 前端层 (packages/frontend/)
+- Vue 3 (Composition API + script setup)
+- TypeScript
+- Arco Design Vue
+- Pinia (状态管理)
+- Vue Router (权限路由)
+- PeerJS (WebRTC 语音)
+- pnpm (包管理)
+
+## LLM 配置
+- Provider: SiliconFlow (OpenAI 兼容)
+- Model: deepseek-ai/DeepSeek-V3.2
+- Base URL: https://api.siliconflow.cn/v1
+- Embedding: BAAI/bge-large-zh-v1.5
+- STT: SiliconFlow Whisper API
+
+## 核心架构
+```
+前端 (Vue3) ←→ 后端 (NestJS) ←→ Agent (LangGraph Python)
+                    ↕                      ↕
+                  SQLite              Redis + Qdrant
+```
+
+## 关键约定
+1. 永远用中文写注释和文档
+2. 每次修改前先阅读 @docs/ARCHITECTURE_FOR_AI.md 了解整体架构（这是专为 AI 编写的纯文字版本，比 ARCHITECTURE.md 更适合你阅读）
+3. 每次修改前先阅读 @docs/PROJECT_STATUS.md 了解当前进度
+4. 修改完成后更新 @docs/PROJECT_STATUS.md
+5. 遵循各层的编码规范（见对应的 .mdc 规则文件）
+6. 接口契约以 @docs/API_CONTRACTS.md 为准
