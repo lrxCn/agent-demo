@@ -30,6 +30,9 @@ def _require_cli_mode() -> None:
 def main() -> None:
     _reconfigure_stdio_utf8()
     _require_cli_mode()
+    from src.infra_check import ensure_infra_or_exit
+
+    ensure_infra_or_exit()
     # 在确认环境变量后再导入 graph，以便 builder 走 Redis 分支
     from src.graph.builder import graph
     from src.graph.invoke_timing import current_invoke_timing, reset_invoke_timing
