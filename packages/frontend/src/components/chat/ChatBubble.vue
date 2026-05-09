@@ -2,10 +2,12 @@
 import { Message } from '@arco-design/web-vue'
 import { IconClose, IconMessage, IconSend } from '@arco-design/web-vue/es/icon'
 import MarkdownIt from 'markdown-it'
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useChat } from '../../composables/useChat'
 import { useChatStore } from '../../stores/chat'
 
 const chat = useChatStore()
+const { sendMessage } = useChat()
 const inputValue = ref('')
 const listRef = ref<HTMLElement | null>(null)
 
@@ -47,6 +49,18 @@ function onClosePanel(): void {
   }
 }
 
+/** 首字节未到前显示独立 typing 行；已有流式正文时由气泡内展示 */
+const showStreamingTyping = computed(() => {
+  if (!chat.isLoading) {
+    return false
+  }
+  const last = chat.messages[chat.messages.length - 1]
+  if (!last || last.role !== 'assistant') {
+    return true
+  }
+  return last.content.length === 0
+})
+
 async function onSend(): Promise<void> {
   const raw = inputValue.value
   if (!raw.trim()) {
@@ -55,7 +69,7 @@ async function onSend(): Promise<void> {
   }
   inputValue.value = ''
   try {
-    await chat.sendMessage(raw)
+    await sendMessage(raw)
   } catch (e) {
     Message.error(e instanceof Error ? e.message : '发送失败')
   }
@@ -93,7 +107,7 @@ async function onSend(): Promise<void> {
           </div>
         </div>
 
-        <div v-if="chat.isLoading" class="msg-row msg-row--assistant">
+        <div v-if="showStreamingTyping" class="msg-row msg-row--assistant">
           <div class="bubble bubble--assistant bubble--typing">
             <span class="typing-dot" />
             <span class="typing-dot typing-dot--2" />
