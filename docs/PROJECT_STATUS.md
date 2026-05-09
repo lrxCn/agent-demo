@@ -30,7 +30,7 @@
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
 | 1-1 | LangGraph State + 基础图结构 | ✅ | 2026-05-09 | chat → 条件边 → ToolNode → chat |
-| 1-2 | 工具注册中心 ToolRegistry | ⬜ | | |
+| 1-2 | 工具注册中心 ToolRegistry | ✅ | 2026-05-09 | `src/tools/registry.py` 单例与筛选 API |
 | 1-3 | 内置工具（天气、计算器等） | ⬜ | | |
 | 1-4 | 工具调用重试机制 | ⬜ | | |
 | 1-5 | 超时检测 | ⬜ | | |
@@ -109,3 +109,4 @@
 | 2026-05-09 | Phase 0 Step 0-6：`packages/agent` uv、LangGraph/LangChain/mem0/Qdrant/redis、`settings.py`、最小可编译图 |
 | 2026-05-09 | Phase 0 Step 0-7 与 Phase 0 收尾：根目录 `.env` / `.env.example`，验证三端可读配置；`feat: Phase 0 完成` 提交 |
 | 2026-05-09 | Phase 1 Step 1-1：`builder.py` 条件路由 + `ToolNode` + `bind_tools`（工具列表占位，待 1-2/1-3 接入） |
+| 2026-05-09 | Phase 1 Step 1-2：`ToolRegistry` / `ToolMeta`、`get_tools` 筛选与全局 `registry` |
