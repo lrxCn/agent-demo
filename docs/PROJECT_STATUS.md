@@ -57,6 +57,8 @@
 
 ## Phase 3: 前端基础页面 (预计 3 天)
 
+**Phase 3 整体：✅ 已完成（2026-05-09）**
+
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
 | 3-1 | Arco Design + 主题 + 布局 | ✅ | 2026-05-09 | 深色主题、`AppLayout`、Pinia `auth`、路由与基础守卫、占位页面与极简登录联调布局 |
@@ -64,7 +66,7 @@
 | 3-3 | 路由权限守卫 + 动态菜单 | ✅ | 2026-05-09 | `permission` store 从 `routes` 派生菜单；`AppLayout` 面包屑 + 侧栏联动；`DashboardView` 展示账号摘要 |
 | 3-4 | 账号管理页面 | ✅ | 2026-05-09 | `user` API 全量 CRUD + 分配角色；`UserListView` 分页搜索与权限按钮 |
 | 3-5 | 角色管理页面 | ✅ | 2026-05-09 | `role`/`permission` API、`RoleListView` 表格与弹窗；列表接口附带权限摘要便于分配回显；`user` 模块复用 `fetchRolesPage` |
-| 3-6 | 学生管理页面 | ⬜ | | |
+| 3-6 | 学生管理页面 | ✅ | 2026-05-09 | `api/modules/student` 分页/CRUD/批量；`StudentListView` 搜索、列排序（当前页）、行多选、批量删除与批量导入弹窗；`student:*` 控制按钮 |
 
 ## Phase 4: AI 对话集成 (预计 3 天)
 
@@ -133,3 +135,4 @@
 | 2026-05-09 | Phase 3 Step 3-3：`stores/permission` 按权限过滤侧栏（与 `meta.permissions` 及 `*` 一致）、顶栏面包屑、`DashboardView` 账号信息卡片 |
 | 2026-05-09 | Phase 3 Step 3-4：`api/modules/user` 列表/增删改/分配角色 + 角色下拉；`UserListView` 表格与弹窗、`hasPermission` 控制按钮 |
 | 2026-05-09 | Phase 3 Step 3-5：`api/modules/role` + `permission`；`RoleListView` 增删改与按分组分配权限；角色列表 DTO 附带权限摘要；`user` 复用角色分页 API |
+| 2026-05-09 | Phase 3 Step 3-6：`api/modules/student`；`StudentListView` 分页搜索、表格排序、增删改、批量删除/导入；Phase 3 收尾 |
