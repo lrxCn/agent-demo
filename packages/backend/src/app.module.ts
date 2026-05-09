@@ -11,6 +11,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { DaoModule } from './dao/dao.module';
 import { PermissionModule } from './permission/permission.module';
 import { RoleModule } from './role/role.module';
+import { StudentModule } from './student/student.module';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -31,6 +32,7 @@ import { UserModule } from './user/user.module';
     RoleModule,
     AuthModule,
     UserModule,
+    StudentModule,
   ],
   controllers: [AppController],
   providers: [
