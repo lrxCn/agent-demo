@@ -1,48 +1,26 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  IconApps,
-  IconBook,
-  IconFile,
-  IconLock,
-  IconPhone,
-  IconUser,
-} from '@arco-design/web-vue/es/icon'
 import { useAuthStore } from '../../stores/auth'
-
-interface MenuItemConfig {
-  key: string
-  label: string
-  icon: Component
-  /** 为空表示登录即可见；否则需具备任一权限（与路由 meta 对齐） */
-  permissions: string[]
-}
+import { usePermissionStore } from '../../stores/permission'
 
 const collapsed = ref(false)
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-
-const allMenuItems: MenuItemConfig[] = [
-  { key: '/dashboard', label: '仪表盘', icon: IconApps, permissions: [] },
-  { key: '/users', label: '用户管理', icon: IconUser, permissions: ['user:view'] },
-  { key: '/roles', label: '角色管理', icon: IconLock, permissions: ['role:view'] },
-  { key: '/students', label: '学生管理', icon: IconFile, permissions: ['student:view'] },
-  { key: '/knowledge', label: '知识库', icon: IconBook, permissions: ['knowledge:view'] },
-  { key: '/rtc', label: '语音通话', icon: IconPhone, permissions: [] },
-]
-
-const visibleMenuItems = computed(() =>
-  allMenuItems.filter(
-    (item) =>
-      item.permissions.length === 0 ||
-      item.permissions.some((code) => auth.hasPermission(code)),
-  ),
-)
+const permission = usePermissionStore()
 
 const selectedKeys = computed(() => [route.path])
+
+/** 根据当前匹配路由生成面包屑（仅包含有 meta.title 的记录） */
+const breadcrumbs = computed(() =>
+  route.matched
+    .filter((r) => Boolean(r.meta?.title) && !r.meta.public)
+    .map((r) => {
+      const path = r.path === '' ? '/' : r.path
+      return { title: r.meta.title as string, path }
+    }),
+)
 
 function onMenuItemClick(key: string): void {
   void router.push(key)
@@ -63,17 +41,22 @@ const displayName = computed(() => auth.user?.nickname || auth.user?.username ||
         <span class="logo-text">Plan2Code</span>
       </div>
       <a-menu :selected-keys="selectedKeys" auto-open-selected @menu-item-click="onMenuItemClick">
-        <a-menu-item v-for="item in visibleMenuItems" :key="item.key">
+        <a-menu-item v-for="item in permission.visibleMenuItems" :key="item.path">
           <template #icon>
             <component :is="item.icon" />
           </template>
-          {{ item.label }}
+          {{ item.title }}
         </a-menu-item>
       </a-menu>
     </a-layout-sider>
     <a-layout>
       <a-layout-header class="app-header">
-        <span class="header-title">{{ route.meta.title ?? '控制台' }}</span>
+        <a-breadcrumb class="header-breadcrumb">
+          <a-breadcrumb-item v-for="(bc, index) in breadcrumbs" :key="bc.path + bc.title">
+            <router-link v-if="index < breadcrumbs.length - 1" :to="bc.path">{{ bc.title }}</router-link>
+            <template v-else>{{ bc.title }}</template>
+          </a-breadcrumb-item>
+        </a-breadcrumb>
         <div class="header-actions">
           <a-dropdown trigger="click">
             <a-button type="text" class="user-trigger">
@@ -127,8 +110,17 @@ const displayName = computed(() => auth.user?.nickname || auth.user?.username ||
   border-bottom: 1px solid var(--color-border-2, rgba(255, 255, 255, 0.08));
 }
 
-.header-title {
-  font-size: 16px;
+.header-breadcrumb {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-breadcrumb :deep(.arco-breadcrumb-item) {
+  color: var(--color-text-2, #94a3b8);
+}
+
+.header-breadcrumb :deep(.arco-breadcrumb-item:last-child) {
+  color: var(--color-text-1, #e2e8f0);
   font-weight: 500;
 }
 
