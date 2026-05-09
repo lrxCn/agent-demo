@@ -34,9 +34,17 @@ export class RoleService {
 
   async list(query: PaginationQuery) {
     const page = await this.roleDao.findAll(query);
+    const ids = page.items.map((r) => r.id);
+    const withPerms =
+      ids.length === 0 ? [] : await this.roleDao.findByIdsWithPermissions(ids);
+    const permByRole = new Map(
+      withPerms.map((r) => [r.id, r.permissions ?? []] as const),
+    );
     return {
       ...page,
-      items: page.items.map((r) => this.toPublicRole(r)),
+      items: page.items.map((r) =>
+        this.toRoleWithPermissionsFromMap(r, permByRole.get(r.id) ?? []),
+      ),
     };
   }
 
@@ -104,6 +112,22 @@ export class RoleService {
     return {
       ...this.toPublicRole(role),
       permissions: (role.permissions ?? []).map((p) => ({
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        groupName: p.groupName,
+      })),
+    };
+  }
+
+  /** 列表项：由分页实体 + 已加载的权限行组装 */
+  private toRoleWithPermissionsFromMap(
+    role: Role,
+    permissions: Role['permissions'],
+  ): RoleWithPermissionSummary {
+    return {
+      ...this.toPublicRole(role),
+      permissions: (permissions ?? []).map((p) => ({
         id: p.id,
         code: p.code,
         name: p.name,

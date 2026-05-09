@@ -26,6 +26,16 @@ export class RoleDaoSqlite implements IRoleDao {
     return this.repo.findOne({ where: { name } });
   }
 
+  async findByIdsWithPermissions(ids: string[]): Promise<Role[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    return this.repo.find({
+      where: { id: In(ids) },
+      relations: ['permissions'],
+    });
+  }
+
   async setPermissions(roleId: string, permissionIds: string[]): Promise<Role> {
     const role = await this.repo.findOne({
       where: { id: roleId },

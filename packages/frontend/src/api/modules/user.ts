@@ -31,14 +31,9 @@ export interface UpdateUserInput {
   nickname?: string
 }
 
-/** 角色列表项（分配角色下拉用，需 role:view） */
-export interface RolePickerItem {
-  id: string
-  name: string
-  description: string | null
-  createdAt: string
-  updatedAt: string
-}
+/** 角色列表项（分配角色弹窗用，与 role 模块列表项一致，需 role:view） */
+export type { RoleListItem as RolePickerItem } from './role'
+export { fetchRolesPage } from './role'
 
 /** 按 ID 拉取用户详情（含角色与权限，用于刷新会话与分配角色回显） */
 export async function fetchUserById(userId: string): Promise<UserDetailPayload> {
@@ -74,14 +69,4 @@ export async function deleteUser(userId: string): Promise<void> {
 export async function assignUserRoles(userId: string, roleIds: string[]): Promise<UserListItem> {
   const body = await request.put<unknown>(`/users/${userId}/roles`, { roleIds })
   return unwrapApiData<UserListItem>(body)
-}
-
-/** 拉取角色分页（用户分配角色弹窗选项，依赖 role:view） */
-export async function fetchRolesPage(params: {
-  page: number
-  pageSize: number
-  keyword?: string
-}): Promise<PaginatedResult<RolePickerItem>> {
-  const body = await request.get<unknown>('/roles', { params })
-  return unwrapApiData<PaginatedResult<RolePickerItem>>(body)
 }
