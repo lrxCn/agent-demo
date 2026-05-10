@@ -15,6 +15,7 @@ import { PermissionModule } from './permission/permission.module';
 import { RoleModule } from './role/role.module';
 import { StudentModule } from './student/student.module';
 import { UserModule } from './user/user.module';
+import { KnowledgeModule } from './knowledge/knowledge.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { UserModule } from './user/user.module';
     StudentModule,
     WsModule,
     AgentModule,
+    KnowledgeModule,
   ],
   controllers: [AppController],
   providers: [
