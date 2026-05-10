@@ -9,6 +9,7 @@ from src.graph.memory_nodes import memory_save_node, memory_search_node
 from src.graph.nodes import after_tools, chat_node, fallback_node, tool_node_with_retry
 from src.graph.state import AgentState
 from src.tools.builtin import register_builtin_tools
+from src.tools.frontend import register_frontend_tools
 
 
 def _is_cli_mode() -> bool:
@@ -16,8 +17,9 @@ def _is_cli_mode() -> bool:
     v = os.environ.get('PLAN2CODE_AGENT_CLI_MODE', '').strip().lower()
     return v in ('1', 'true', 'yes', 'on')
 
-# 模块加载时注册内置工具
+# 模块加载时注册内置工具与前端工具
 register_builtin_tools()
+register_frontend_tools()
 
 
 def should_continue(state: AgentState) -> str:

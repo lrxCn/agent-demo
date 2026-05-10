@@ -101,7 +101,17 @@ def _tool_call_parts(tool_call: object) -> tuple[str, dict[str, object], str]:
 
 def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
     """聊天节点（使用 memory_search_node 写入的 retrieved_memories 注入系统提示）"""
-    tools = registry.get_tools(categories=['builtin'])
+    # 内置工具始终加载
+    builtin_tools = registry.get_tools(categories=['builtin'])
+    # 前端工具按当前页面注册的可用列表按需加载
+    frontend_tool_names = state.get('available_frontend_tools') or []
+    frontend_tools = (
+        registry.get_tools(categories=['frontend'], names=frontend_tool_names)
+        if frontend_tool_names
+        else []
+    )
+    tools = builtin_tools + frontend_tools
+
     llm = get_llm(tools=tools)
     messages = list(state['messages'])
     memories = state.get('retrieved_memories') or []
