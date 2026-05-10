@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Logger,
   Post,
   Res,
   UploadedFile,
@@ -21,6 +22,8 @@ import { SttService } from './stt.service';
 @Controller('agent')
 @UseGuards(JwtAuthGuard)
 export class AgentController {
+  private readonly logger = new Logger(AgentController.name);
+
   constructor(
     private readonly agentService: AgentService,
     private readonly sttService: SttService,
@@ -62,7 +65,10 @@ export class AgentController {
 
   @Post('transcribe')
   @UseInterceptors(FileInterceptor('file'))
-  async transcribe(@UploadedFile() file: Express.Multer.File) {
+  async transcribe(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: { callerUserId?: string; calleeUserId?: string },
+  ) {
     if (!file || !file.buffer || file.size <= 0) {
       return { code: 1, data: null, message: '请上传有效的录音文件' };
     }
@@ -70,6 +76,29 @@ export class AgentController {
       file.buffer,
       file.originalname || 'call-record.webm',
     );
+
+    if (body.callerUserId && body.calleeUserId) {
+      try {
+        const response = await fetch('http://127.0.0.1:8123/calls/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            caller_user_id: body.callerUserId,
+            callee_user_id: body.calleeUserId,
+            call_time: new Date().toISOString(),
+          }),
+        });
+        if (!response.ok) {
+          this.logger.warn(`Agent 通话记录入库返回状态异常: ${response.status}`);
+        } else {
+          this.logger.log(`成功推送给 Agent 记录通话记录: ${body.callerUserId} - ${body.calleeUserId}`);
+        }
+      } catch (e) {
+        this.logger.warn(`向 Agent 发送通话记录失败: ${(e as Error).message}`);
+      }
+    }
+
     return { code: 0, data: { text }, message: 'ok' };
   }
 }

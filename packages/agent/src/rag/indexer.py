@@ -75,3 +75,50 @@ def index_document(text: str, metadata: dict[str, Any]) -> int:
 
     qdrant.upsert(collection_name=COLLECTION_NAME, points=points)
     return len(points)
+
+
+def index_call_transcript(
+    text: str,
+    caller_user_id: str,
+    callee_user_id: str,
+    call_time: str,
+) -> int:
+    """索引通话记录 - 仅通话双方可查询"""
+    normalized_text = text.strip()
+    if not normalized_text:
+        return 0
+
+    ensure_collection()
+
+    metadata = {
+        "type": "call_transcript",
+        "caller_user_id": caller_user_id,
+        "callee_user_id": callee_user_id,
+        "call_time": call_time,
+        "participant_ids": [caller_user_id, callee_user_id],
+    }
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP,
+    )
+    chunks = splitter.split_text(normalized_text)
+    if not chunks:
+        return 0
+
+    vectors = embeddings.embed_documents(chunks)
+    points = []
+    for chunk, vector in zip(chunks, vectors, strict=True):
+        points.append(
+            PointStruct(
+                id=str(uuid.uuid4()),
+                vector=vector,
+                payload={
+                    "text": chunk,
+                    **metadata,
+                },
+            )
+        )
+
+    qdrant.upsert(collection_name=COLLECTION_NAME, points=points)
+    return len(points)

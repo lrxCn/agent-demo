@@ -149,6 +149,8 @@ def tool_node_with_retry(state: AgentState) -> dict[str, list[BaseMessage]]:
         tool_name, tool_input, tool_call_id = _tool_call_parts(tool_call)
         if tool_name == 'search_knowledge_base':
             tool_input['role_ids'] = user_role_ids
+        elif tool_name == 'search_call_history':
+            tool_input['user_id'] = state.get('mem0_user_id') or ''
 
         tool = tool_map.get(tool_name)
         if not tool:

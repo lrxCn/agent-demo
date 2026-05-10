@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from src.rag.indexer import index_document
+from src.rag.indexer import index_call_transcript, index_document
 
 app = FastAPI()
 
@@ -35,5 +35,31 @@ def ingest_knowledge(payload: IngestKnowledgeRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"索引失败: {exc}") from exc
+    return {"ok": True, "chunks": chunk_count}
+
+
+class IngestCallRequest(BaseModel):
+    """通话记录入库请求体。"""
+
+    text: str = Field(min_length=1)
+    caller_user_id: str
+    callee_user_id: str
+    call_time: str
+
+
+@app.post("/calls/ingest")
+def ingest_call(payload: IngestCallRequest) -> dict[str, Any]:
+    """接收通话记录并触发向量化入库。"""
+    try:
+        chunk_count = index_call_transcript(
+            text=payload.text,
+            caller_user_id=payload.caller_user_id,
+            callee_user_id=payload.callee_user_id,
+            call_time=payload.call_time,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"索引通话记录失败: {exc}") from exc
 
     return {"ok": True, "chunks": chunk_count}

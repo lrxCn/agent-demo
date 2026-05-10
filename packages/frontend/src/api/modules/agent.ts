@@ -34,9 +34,20 @@ interface TranscribeResponse {
   text: string
 }
 
-export async function transcribeAudio(file: Blob, filename = 'call-record.webm'): Promise<string> {
+export async function transcribeAudio(
+  file: Blob,
+  filename = 'call-record.webm',
+  callerUserId?: string,
+  calleeUserId?: string,
+): Promise<string> {
   const formData = new FormData()
   formData.append('file', file, filename)
+  if (callerUserId) {
+    formData.append('callerUserId', callerUserId)
+  }
+  if (calleeUserId) {
+    formData.append('calleeUserId', calleeUserId)
+  }
   const body = await request.post('/agent/transcribe', formData)
   const data = unwrapApiData<TranscribeResponse>(body)
   return data.text

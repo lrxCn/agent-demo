@@ -393,7 +393,12 @@ export function useWebRTC() {
     }
     try {
       isTranscribing.value = true
-      const text = await transcribeAudio(blob)
+      const text = await transcribeAudio(
+        blob,
+        'call-record.webm',
+        auth.user?.id,
+        activeUserId.value || undefined,
+      )
       transcribedText.value = text
       Message.success('录音转写完成')
     } catch (err) {
