@@ -99,7 +99,7 @@
 | 6-3 | 音频文件发送 | ✅ | 2026-05-10 | PeerJS DataChannel 分片发送音频文件，支持发送/接收进度与接收端播放 |
 | 6-4 | Whisper STT 转文字 | ✅ | 2026-05-10 | 新增 `POST /api/v1/agent/transcribe`，通话挂断自动上传录音并完成转写 |
 | 6-5 | 通话文本存 RAG | ✅ | 2026-05-10 | Agent 新增 `index_call_transcript` 与 `search_call_history`（按参与者 `user_id` 过滤），并在 `webapp.py` 暴露 `POST /calls/ingest`，在 STT 转写后记录到 RAG |
-| 6-6 | AI 查询通话内容 | ⬜ | | |
+| 6-6 | AI 查询通话内容 | ✅ | 2026-05-10 | 新增 `search_my_calls` 工具并注册到 `ToolRegistry`，Agent 根据上下文判断调用，并在内部进行用户鉴权（隔离查询），端到端联调通过 |
 
 ---
 
@@ -152,4 +152,5 @@
 | 2026-05-10 | Phase 6 Step 6-2：前端安装 `peerjs`，新增 `useWebRTC.ts`（Peer 初始化、呼叫/接听/挂断、在线用户查询、MediaRecorder 录音）与 `VoiceCallView.vue`（在线用户列表、来电弹窗、通话状态面板），并将 `/rtc` 路由切换到新页面 |
 | 2026-05-10 | Phase 6 Step 6-3：在 `useWebRTC.ts` 增加 PeerJS DataChannel 音频文件分片协议（`audio-meta/chunk/end`），支持发送与接收进度；`VoiceCallView.vue` 增加音频文件选择发送、发送进度展示、接收文件列表与 HTML5 Audio 播放 |
 | 2026-05-10 | Phase 6 Step 6-4：后端新增 `SttService` 对接 SiliconFlow Whisper（`FunAudioLLM/SenseVoiceSmall`）与 `POST /api/v1/agent/transcribe` 上传接口；前端 `useWebRTC` 在挂断时自动停止录音并上传转写，`VoiceCallView` 展示转写中状态和最近一次转写文本 |
-| 2026-05-10 | Phase 6 Step 6-5：Agent 新增 `index_call_transcript` 与 `search_call_history` 工具（按 `user_id` 过滤权限）并暴露 HTTP 接口；前端挂断时上传附带 `callerUserId` 与 `calleeUserId`，后端 STT 完成后通过 HTTP 调用 Agent 入库 Qdrant |
+| 2026-05-10 | Phase 6 Step 6-5：Agent 新增 `index_call_transcript` 与 `search_my_calls` 工具（按 `user_id` 过滤权限）并暴露 HTTP 接口；前端挂断时上传附带 `callerUserId` 与 `calleeUserId`，后端 STT 完成后通过 HTTP 调用 Agent 入库 Qdrant |
+| 2026-05-10 | Phase 6 Step 6-6：完成 `search_my_calls` 工具开发并集成至 LangGraph，实现了仅通话双方可查询到相关录音的鉴权隔离。 |
