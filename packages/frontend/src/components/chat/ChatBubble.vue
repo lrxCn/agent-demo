@@ -69,7 +69,10 @@ async function onSend(): Promise<void> {
   }
   inputValue.value = ''
   try {
-    await sendMessage(raw)
+    // TODO: 4-5 完成后移除此临时硬编码，改为动态注册
+    await sendMessage(raw, {
+      available_tools: ['navigate_to_page', 'create_student', 'delete_student', 'query_students'],
+    })
   } catch (e) {
     Message.error(e instanceof Error ? e.message : '发送失败')
   }

@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as readline from 'readline';
 
 import { HttpService } from '@nestjs/axios';
@@ -7,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import type { Readable } from 'stream';
 
 import { JwtUser } from '../auth/types/jwt-user.types';
+import { AppGateway } from '../common/gateways/app.gateway';
 import { UserFrontendToolsService } from '../common/gateways/user-frontend-tools.service';
 import { ChatDto } from './dto/chat.dto';
 
@@ -29,6 +31,7 @@ export class AgentService {
     private readonly http: HttpService,
     private readonly config: ConfigService,
     private readonly userFrontendTools: UserFrontendToolsService,
+    private readonly gateway: AppGateway,
   ) {}
 
   /** WebSocket 缓存与请求体中的工具名合并（去重），供 LangGraph 注入前端工具 */
@@ -104,6 +107,8 @@ export class AgentService {
     }
 
     const stream = res.data;
+    /** 收集 updates 模式下的完整前端工具调用（覆盖策略，保证 params 完整） */
+    const wsToolCalls = new Map<string, { tool: string; params: Record<string, unknown> }>();
     try {
       for await (const evt of this.parseSse(stream)) {
         for (const out of this.mapLangGraphEvent(evt, available, emittedToolKeys)) {
@@ -112,9 +117,16 @@ export class AgentService {
           }
           yield out;
         }
+        // 从原始 SSE 事件中额外提取 updates 模式的完整 tool_calls（不受 emittedToolKeys 限制）
+        this.collectUpdatesToolCalls(evt, available, wsToolCalls);
       }
     } finally {
       stream.destroy();
+    }
+
+    // 流结束后，推送完整的前端工具调用
+    for (const tc of wsToolCalls.values()) {
+      this.pushToolInvoke(user.id, tc.tool, tc.params);
     }
 
     yield { type: 'done', content: accumulatedText, thread_id: threadId };
@@ -124,6 +136,81 @@ export class AgentService {
   async *chatStream(user: JwtUser, dto: ChatDto): AsyncGenerator<AgentChatStreamPayload, void, undefined> {
     const threadId = dto.thread_id?.trim() ? dto.thread_id : await this.createThread();
     yield* this.streamChat(threadId, dto, user);
+  }
+
+  /** 通过 WebSocket 向前端推送 tool:invoke 事件 */
+  private pushToolInvoke(userId: string, tool: string, params: Record<string, unknown>): void {
+    const socket = this.gateway.getSocketByUserId(userId);
+    if (!socket) {
+      this.logger.warn(`tool:invoke 推送失败：用户 ${userId} 无在线 WebSocket`);
+      return;
+    }
+    const invokeId = crypto.randomUUID();
+    socket.emit('tool:invoke', { id: invokeId, tool, params });
+    this.logger.debug(`tool:invoke 已推送 userId=${userId} tool=${tool} id=${invokeId}`);
+  }
+
+  /**
+   * 从 SSE 原始事件中提取 updates 模式下的完整 tool_calls。
+   * 不受 emittedToolKeys 去重限制，保证 WebSocket 推送拿到完整 params。
+   * 使用覆盖策略：同名工具后来者覆盖前者。
+   */
+  private collectUpdatesToolCalls(
+    evt: { event: string; data: string },
+    availableTools: Set<string>,
+    target: Map<string, { tool: string; params: Record<string, unknown> }>,
+  ): void {
+    const raw = evt.data.trim();
+    if (!raw || raw === '[DONE]') {
+      return;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw) as unknown;
+    } catch {
+      return;
+    }
+    // 多 stream_mode 格式：["updates", { chat: { messages: [...] } }]
+    let updatesPayload: Record<string, unknown> | undefined;
+    if (Array.isArray(parsed) && parsed.length >= 2 && parsed[0] === 'updates') {
+      updatesPayload = parsed[1] as Record<string, unknown>;
+    } else if (evt.event === 'updates' && parsed && typeof parsed === 'object') {
+      updatesPayload = parsed as Record<string, unknown>;
+    }
+    if (!updatesPayload) {
+      return;
+    }
+    const chatUpdate = updatesPayload.chat as { messages?: unknown[] } | undefined;
+    if (!chatUpdate?.messages || !Array.isArray(chatUpdate.messages)) {
+      return;
+    }
+    for (const msg of chatUpdate.messages) {
+      if (!msg || typeof msg !== 'object') {
+        continue;
+      }
+      const toolCalls = (msg as Record<string, unknown>).tool_calls;
+      if (!Array.isArray(toolCalls)) {
+        continue;
+      }
+      for (const tc of toolCalls) {
+        if (!tc || typeof tc !== 'object') {
+          continue;
+        }
+        const obj = tc as Record<string, unknown>;
+        const name = typeof obj.name === 'string' ? obj.name : '';
+        if (!name || !availableTools.has(name)) {
+          continue;
+        }
+        let params: Record<string, unknown> = {};
+        if (obj.args && typeof obj.args === 'object' && !Array.isArray(obj.args)) {
+          params = obj.args as Record<string, unknown>;
+        }
+        // 只收集有实际参数的 tool_call
+        if (Object.keys(params).length > 0) {
+          target.set(name, { tool: name, params });
+        }
+      }
+    }
   }
 
   private async *parseSse(

@@ -79,7 +79,6 @@ export function useChat() {
   const streamAbort = ref<AbortController | null>(null)
 
   async function sendMessage(content: string, options?: { available_tools?: string[] }): Promise<void> {
-    debugger
     const trimmed = content.trim()
     if (!trimmed || chat.isLoading) {
       return

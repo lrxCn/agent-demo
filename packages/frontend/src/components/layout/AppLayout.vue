@@ -4,12 +4,16 @@ import { useRoute, useRouter } from 'vue-router'
 import ChatBubble from '../chat/ChatBubble.vue'
 import { useAuthStore } from '../../stores/auth'
 import { usePermissionStore } from '../../stores/permission'
+import { useWebSocket } from '../../composables/useWebSocket'
 
 const collapsed = ref(false)
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const permission = usePermissionStore()
+
+// 全局 WebSocket 连接（tool:invoke 监听）
+useWebSocket()
 
 const selectedKeys = computed(() => [route.path])
 
