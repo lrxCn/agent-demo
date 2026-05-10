@@ -73,6 +73,7 @@ export function useToolExecutor() {
       email: params.email ? String(params.email) : undefined,
     }
     const student = await apiCreateStudent(body)
+    window.dispatchEvent(new CustomEvent('student:refresh'))
     return { success: true, result: { id: student.id, name: student.name } }
   }
 
@@ -87,6 +88,7 @@ export function useToolExecutor() {
     }
 
     await apiDeleteStudent(studentId)
+    window.dispatchEvent(new CustomEvent('student:refresh'))
     return { success: true, result: `已删除学生 ${studentName}` }
   }
 

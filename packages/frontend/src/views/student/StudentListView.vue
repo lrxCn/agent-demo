@@ -132,6 +132,20 @@ function onPageSizeChange(size: number): void {
 
 void loadTable()
 
+import { onMounted, onUnmounted } from 'vue'
+
+function handleRefreshEvent() {
+  void loadTable()
+}
+
+onMounted(() => {
+  window.addEventListener('student:refresh', handleRefreshEvent)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('student:refresh', handleRefreshEvent)
+})
+
 // —— 新增 ——
 const createVisible = ref(false)
 const createFormRef = ref<FormInstance>()

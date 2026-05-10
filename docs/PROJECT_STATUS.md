@@ -78,7 +78,7 @@
 | 4-4 | 结构化输出 → WebSocket → 前端执行 | ✅ | 2026-05-10 | `AgentService` 推送 `tool:invoke`、`useWebSocket.ts` Socket.io 连接与监听、`useToolExecutor.ts` 四工具 handler + Modal.confirm、`AppLayout` 初始化 WS |
 | 4-4 | 结构化输出 → WebSocket → 前端执行 | ✅ | 2026-05-10 | `AgentService` 推送 `tool:invoke`、`useWebSocket.ts` Socket.io 连接与监听、`useToolExecutor.ts` 四工具 handler + Modal.confirm、`AppLayout` 初始化 WS |
 | 4-5 | 前端工具注册中心 (按页面按需) | ✅ | 2026-05-10 | `useToolRegistry` composable、`bindSocketToRegistry` 绑定 WebSocket、`AppLayout` 注册 navigate、`StudentListView` 注册学生工具、`ChatBubble` 动态读取 `available_tools` |
-| 4-6 | 对话触发学生 CRUD | ⬜ | | |
+| 4-6 | 对话触发学生 CRUD | ✅ | 2026-05-10 | 端到端联调通过；在 `useToolExecutor` 和 `StudentListView` 间增加 `student:refresh` 事件实现列表自动刷新 |
 
 ## Phase 5: RAG 知识库 (预计 2 天)
 
@@ -142,3 +142,4 @@
 | 2026-05-10 | Phase 4 Step 4-3：`tools/frontend/schemas.py` 四工具 schema（navigate_to_page / create_student / delete_student / query_students）、`frontend/__init__` 注册到 registry、`chat_node` 按 `available_frontend_tools` 按需加载前端工具 |
 | 2026-05-10 | Phase 4 Step 4-4：`AgentService` 注入 `AppGateway` + `pushToolInvoke` WebSocket 推送；`useToolExecutor.ts` 四工具 handler + Arco Modal.confirm 确认弹窗；`useWebSocket.ts` Socket.io 连接 + `tool:invoke` 监听 + `tool:result` 回传；`AppLayout` 初始化 WS |
 | 2026-05-10 | Phase 4 Step 4-5：创建 `useToolRegistry.ts` (按页面按需注册前端工具)；在 `useWebSocket.ts` 中绑定 Socket 以在工具变化时 `notifyBackend()` (`tools:update`)；在 `AppLayout` 注册 `navigate_to_page`；在 `StudentListView` 注册学生 CRUD 工具并在卸载时自动注销；修改 `ChatBubble` 使其在 `sendMessage` 时动态获取可用工具 (`getRegisteredToolNames()`) |
+| 2026-05-10 | Phase 4 Step 4-6：修复了对话 CRUD 中，代理成功创建/删除后页面列表未更新的问题。在 `useToolExecutor` 加入 `CustomEvent('student:refresh')` 派发逻辑，`StudentListView` 监听此事件执行刷新 |
