@@ -39,7 +39,7 @@ export const routes: RouteRecordRaw[] = [
       {
         path: 'knowledge',
         name: 'Knowledge',
-        component: () => import('../views/knowledge/KnowledgeView.vue'),
+        component: () => import('../views/knowledge/KnowledgeListView.vue'),
         meta: { title: '知识库', permissions: ['knowledge:view'] },
       },
       {
