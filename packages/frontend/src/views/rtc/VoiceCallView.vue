@@ -13,11 +13,17 @@ const {
   activeUserId,
   callDurationSec,
   recordedBlob,
+  isSendingAudioFile,
+  sendingProgress,
+  sendingFileName,
+  receivingProgress,
+  receivedAudioFiles,
   refreshOnlineUsers,
   call,
   answer,
   reject,
   hangup,
+  sendAudioFile,
 } = useWebRTC()
 
 const remoteAudioRef = ref<HTMLAudioElement | null>(null)
@@ -87,6 +93,19 @@ function handleReject() {
 function handleHangup() {
   hangup()
 }
+
+function handlePickAudioFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) {
+    return
+  }
+  void sendAudioFile(file).catch((err) => {
+    const msg = err instanceof Error ? err.message : '发送音频文件失败'
+    Message.error(msg)
+  })
+  input.value = ''
+}
 </script>
 
 <template>
@@ -136,6 +155,49 @@ function handleHangup() {
           <a-button type="outline" status="danger" :disabled="!activeUserId" @click="handleHangup">挂断</a-button>
         </a-space>
       </a-card>
+
+      <a-card title="音频文件发送">
+        <a-space direction="vertical" size="medium" fill>
+          <div class="hint-text">支持 mp3 / wav / ogg / m4a / webm</div>
+          <input
+            type="file"
+            accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/webm,.mp3,.wav,.ogg,.m4a,.webm"
+            :disabled="!activeUserId || isSendingAudioFile"
+            @change="handlePickAudioFile"
+          />
+          <a-progress
+            v-if="isSendingAudioFile"
+            :percent="sendingProgress"
+            :show-text="true"
+            status="normal"
+          />
+          <div v-if="isSendingAudioFile" class="hint-text">正在发送：{{ sendingFileName }}</div>
+          <a-progress
+            v-if="receivingProgress > 0 && receivingProgress < 100"
+            :percent="receivingProgress"
+            :show-text="true"
+            status="normal"
+          />
+        </a-space>
+      </a-card>
+
+      <a-card title="接收到的音频">
+        <a-empty v-if="receivedAudioFiles.length === 0" description="暂无接收文件" />
+        <a-list v-else :data="receivedAudioFiles" bordered>
+          <template #item="{ item }">
+            <a-list-item>
+              <a-space direction="vertical" fill>
+                <div>
+                  <a-tag color="green">已接收</a-tag>
+                  <span class="status-text">{{ item.name }}</span>
+                  <span class="status-text">{{ Math.ceil(item.size / 1024) }} KB</span>
+                </div>
+                <audio :src="item.objectUrl" controls preload="metadata" />
+              </a-space>
+            </a-list-item>
+          </template>
+        </a-list>
+      </a-card>
     </a-space>
 
     <a-modal
@@ -165,5 +227,10 @@ function handleHangup() {
 
 .status-text {
   margin-left: 8px;
+}
+
+.hint-text {
+  color: var(--color-text-3);
+  font-size: 12px;
 }
 </style>

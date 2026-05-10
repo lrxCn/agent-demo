@@ -1,5 +1,5 @@
 import { Message } from '@arco-design/web-vue'
-import Peer, { type MediaConnection } from 'peerjs'
+import Peer, { type DataConnection, type MediaConnection } from 'peerjs'
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { getWebSocketClient } from './useWebSocket'
@@ -7,6 +7,46 @@ import { getWebSocketClient } from './useWebSocket'
 interface IncomingCallInfo {
   callerUserId: string
 }
+
+interface AudioFileMeta {
+  id: string
+  name: string
+  mimeType: string
+  size: number
+}
+
+interface ReceivedAudioFile extends AudioFileMeta {
+  blob: Blob
+  objectUrl: string
+}
+
+interface IncomingTransferSession {
+  meta: AudioFileMeta
+  chunks: ArrayBuffer[]
+  receivedBytes: number
+}
+
+interface AudioMetaMessage {
+  type: 'audio-meta'
+  payload: AudioFileMeta
+}
+
+interface AudioChunkMessage {
+  type: 'audio-chunk'
+  payload: {
+    id: string
+    chunk: ArrayBuffer
+  }
+}
+
+interface AudioEndMessage {
+  type: 'audio-end'
+  payload: {
+    id: string
+  }
+}
+
+type AudioTransferMessage = AudioMetaMessage | AudioChunkMessage | AudioEndMessage
 
 function buildPeerConfig() {
   const host = (import.meta.env.VITE_PEER_HOST as string | undefined) || window.location.hostname
@@ -26,6 +66,7 @@ export function useWebRTC() {
 
   const peer = shallowRef<Peer | null>(null)
   const connection = shallowRef<MediaConnection | null>(null)
+  const dataConnection = shallowRef<DataConnection | null>(null)
   const localStream = ref<MediaStream | null>(null)
   const remoteStream = ref<MediaStream | null>(null)
   const incomingCall = ref<IncomingCallInfo | null>(null)
@@ -37,6 +78,12 @@ export function useWebRTC() {
   const recordChunks = ref<Blob[]>([])
   const recordedBlob = ref<Blob | null>(null)
   const onlineUserIds = ref<string[]>([])
+  const isSendingAudioFile = ref(false)
+  const sendingProgress = ref(0)
+  const sendingFileName = ref('')
+  const receivingProgress = ref(0)
+  const receivedAudioFiles = ref<ReceivedAudioFile[]>([])
+  const incomingTransferSessions = new Map<string, IncomingTransferSession>()
 
   const callDurationSec = computed(() =>
     startedAt.value ? Math.floor((Date.now() - startedAt.value) / 1000) : 0,
@@ -81,6 +128,9 @@ export function useWebRTC() {
         Message.error(msg)
       }
     })
+    p.on('connection', (conn) => {
+      bindDataConnection(conn)
+    })
     peer.value = p
     return p
   }
@@ -111,6 +161,87 @@ export function useWebRTC() {
     mediaConn.on('error', () => {
       clearCallState(false)
     })
+  }
+
+  function bindDataConnection(conn: DataConnection) {
+    if (dataConnection.value && dataConnection.value !== conn) {
+      dataConnection.value.close()
+    }
+    dataConnection.value = conn
+    conn.on('data', (data) => {
+      handleDataMessage(data)
+    })
+    conn.on('close', () => {
+      if (dataConnection.value === conn) {
+        dataConnection.value = null
+      }
+      receivingProgress.value = 0
+      incomingTransferSessions.clear()
+    })
+    conn.on('error', () => {
+      Message.error('音频文件通道异常')
+    })
+  }
+
+  function ensureDataConnection(targetUserId: string): DataConnection {
+    const p = ensurePeer()
+    const current = dataConnection.value
+    if (current && current.peer === targetUserId && current.open) {
+      return current
+    }
+    const conn = p.connect(targetUserId, { reliable: true })
+    bindDataConnection(conn)
+    return conn
+  }
+
+  function isAudioTransferMessage(value: unknown): value is AudioTransferMessage {
+    if (!value || typeof value !== 'object' || !('type' in value)) {
+      return false
+    }
+    const msg = value as { type?: string }
+    return msg.type === 'audio-meta' || msg.type === 'audio-chunk' || msg.type === 'audio-end'
+  }
+
+  function handleDataMessage(data: unknown) {
+    if (!isAudioTransferMessage(data)) {
+      return
+    }
+    if (data.type === 'audio-meta') {
+      incomingTransferSessions.set(data.payload.id, {
+        meta: data.payload,
+        chunks: [],
+        receivedBytes: 0,
+      })
+      receivingProgress.value = 0
+      Message.info(`正在接收音频文件：${data.payload.name}`)
+      return
+    }
+    if (data.type === 'audio-chunk') {
+      const session = incomingTransferSessions.get(data.payload.id)
+      if (!session) {
+        return
+      }
+      const chunk = data.payload.chunk
+      session.chunks.push(chunk)
+      session.receivedBytes += chunk.byteLength
+      const total = session.meta.size || 1
+      receivingProgress.value = Math.min(100, Math.floor((session.receivedBytes / total) * 100))
+      return
+    }
+    const session = incomingTransferSessions.get(data.payload.id)
+    if (!session) {
+      return
+    }
+    const blob = new Blob(session.chunks, { type: session.meta.mimeType || 'audio/mpeg' })
+    const objectUrl = URL.createObjectURL(blob)
+    receivedAudioFiles.value.unshift({
+      ...session.meta,
+      blob,
+      objectUrl,
+    })
+    receivingProgress.value = 100
+    incomingTransferSessions.delete(data.payload.id)
+    Message.success(`音频文件接收完成：${session.meta.name}`)
   }
 
   function bindSignalingEvents() {
@@ -177,6 +308,7 @@ export function useWebRTC() {
     const stream = await getLocalAudioStream()
     const mediaConn = p.call(targetUserId, stream)
     bindConnection(mediaConn)
+    ensureDataConnection(targetUserId)
     activeUserId.value = targetUserId
     callingUserId.value = null
     startRecording()
@@ -243,14 +375,87 @@ export function useWebRTC() {
     }
     connection.value?.close()
     connection.value = null
+    dataConnection.value?.close()
+    dataConnection.value = null
     remoteStream.value = null
     activeUserId.value = null
     callingUserId.value = null
     startedAt.value = null
+    isSendingAudioFile.value = false
+    sendingProgress.value = 0
+    sendingFileName.value = ''
+    receivingProgress.value = 0
+    incomingTransferSessions.clear()
+  }
+
+  async function sendAudioFile(file: File) {
+    if (!activeUserId.value) {
+      throw new Error('当前没有通话中的对端，无法发送音频')
+    }
+    const conn = ensureDataConnection(activeUserId.value)
+    if (!conn.open) {
+      throw new Error('文件通道尚未就绪，请稍后重试')
+    }
+
+    const transferId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const meta: AudioFileMeta = {
+      id: transferId,
+      name: file.name,
+      mimeType: file.type || 'audio/mpeg',
+      size: file.size,
+    }
+    const chunkSize = 16 * 1024
+    const buffer = await file.arrayBuffer()
+
+    isSendingAudioFile.value = true
+    sendingProgress.value = 0
+    sendingFileName.value = file.name
+
+    try {
+      conn.send({
+        type: 'audio-meta',
+        payload: meta,
+      } satisfies AudioMetaMessage)
+
+      let offset = 0
+      while (offset < buffer.byteLength) {
+        const end = Math.min(offset + chunkSize, buffer.byteLength)
+        const chunk = buffer.slice(offset, end)
+        conn.send({
+          type: 'audio-chunk',
+          payload: {
+            id: transferId,
+            chunk,
+          },
+        } satisfies AudioChunkMessage)
+        offset = end
+        sendingProgress.value = Math.min(100, Math.floor((offset / buffer.byteLength) * 100))
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 0)
+        })
+      }
+
+      conn.send({
+        type: 'audio-end',
+        payload: { id: transferId },
+      } satisfies AudioEndMessage)
+      sendingProgress.value = 100
+      Message.success(`音频文件发送完成：${file.name}`)
+    } finally {
+      window.setTimeout(() => {
+        isSendingAudioFile.value = false
+        sendingProgress.value = 0
+        sendingFileName.value = ''
+      }, 500)
+    }
   }
 
   function dispose() {
     clearCallState(true)
+    for (const item of receivedAudioFiles.value) {
+      URL.revokeObjectURL(item.objectUrl)
+    }
+    receivedAudioFiles.value = []
     localStream.value?.getTracks().forEach((t) => t.stop())
     localStream.value = null
     peer.value?.destroy()
@@ -273,11 +478,17 @@ export function useWebRTC() {
     activeUserId,
     callDurationSec,
     recordedBlob,
+    isSendingAudioFile,
+    sendingProgress,
+    sendingFileName,
+    receivingProgress,
+    receivedAudioFiles,
     refreshOnlineUsers,
     call,
     answer,
     reject,
     hangup,
+    sendAudioFile,
     startRecording,
     stopRecording,
   }
