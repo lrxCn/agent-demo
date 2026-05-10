@@ -22,6 +22,14 @@ interface AuthenticatedSocketData {
   userId?: string;
 }
 
+interface RtcTargetBody {
+  targetUserId: string;
+}
+
+interface RtcSignalBody extends RtcTargetBody {
+  signal: unknown;
+}
+
 function getSocketData(client: Socket): AuthenticatedSocketData {
   const data = client.data as AuthenticatedSocketData;
   return data;
@@ -130,23 +138,119 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('rtc:call')
-  handleRtcCall(@MessageBody() _body: unknown): void {
-    /* Phase 6：发起呼叫 */
+  handleRtcCall(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: unknown,
+  ): { ok: true } | { ok: false; message: string } {
+    const userId = getSocketData(client).userId;
+    if (!userId) {
+      return { ok: false, message: '未认证' };
+    }
+    const parsed = this.parseRtcTargetBody(body);
+    if (parsed.ok === false) {
+      return parsed;
+    }
+    const target = this.onlineUsers.get(parsed.targetUserId);
+    if (!target) {
+      return { ok: false, message: '目标用户不在线' };
+    }
+    target.emit('rtc:incoming', { callerUserId: userId });
+    return { ok: true };
   }
 
   @SubscribeMessage('rtc:answer')
-  handleRtcAnswer(@MessageBody() _body: unknown): void {
-    /* Phase 6：接听/拒绝 */
+  handleRtcAnswer(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: unknown,
+  ): { ok: true } | { ok: false; message: string } {
+    const userId = getSocketData(client).userId;
+    if (!userId) {
+      return { ok: false, message: '未认证' };
+    }
+    const parsed = this.parseRtcTargetBody(body);
+    if (parsed.ok === false) {
+      return parsed;
+    }
+    const target = this.onlineUsers.get(parsed.targetUserId);
+    if (!target) {
+      return { ok: false, message: '目标用户不在线' };
+    }
+    target.emit('rtc:answered', { userId });
+    return { ok: true };
+  }
+
+  @SubscribeMessage('rtc:reject')
+  handleRtcReject(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: unknown,
+  ): { ok: true } | { ok: false; message: string } {
+    const userId = getSocketData(client).userId;
+    if (!userId) {
+      return { ok: false, message: '未认证' };
+    }
+    const parsed = this.parseRtcTargetBody(body);
+    if (parsed.ok === false) {
+      return parsed;
+    }
+    const target = this.onlineUsers.get(parsed.targetUserId);
+    if (!target) {
+      return { ok: false, message: '目标用户不在线' };
+    }
+    target.emit('rtc:rejected', { userId });
+    return { ok: true };
   }
 
   @SubscribeMessage('rtc:signal')
-  handleRtcSignal(@MessageBody() _body: unknown): void {
-    /* Phase 6：信令交换 */
+  handleRtcSignal(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: unknown,
+  ): { ok: true } | { ok: false; message: string } {
+    const userId = getSocketData(client).userId;
+    if (!userId) {
+      return { ok: false, message: '未认证' };
+    }
+    const parsed = this.parseRtcSignalBody(body);
+    if (parsed.ok === false) {
+      return parsed;
+    }
+    const target = this.onlineUsers.get(parsed.targetUserId);
+    if (!target) {
+      return { ok: false, message: '目标用户不在线' };
+    }
+    target.emit('rtc:signal', { fromUserId: userId, signal: parsed.signal });
+    return { ok: true };
   }
 
   @SubscribeMessage('rtc:hangup')
-  handleRtcHangup(@MessageBody() _body: unknown): void {
-    /* Phase 6：挂断 */
+  handleRtcHangup(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: unknown,
+  ): { ok: true } | { ok: false; message: string } {
+    const userId = getSocketData(client).userId;
+    if (!userId) {
+      return { ok: false, message: '未认证' };
+    }
+    const parsed = this.parseRtcTargetBody(body);
+    if (parsed.ok === false) {
+      return parsed;
+    }
+    const target = this.onlineUsers.get(parsed.targetUserId);
+    if (!target) {
+      return { ok: false, message: '目标用户不在线' };
+    }
+    target.emit('rtc:hangup', { userId });
+    return { ok: true };
+  }
+
+  @SubscribeMessage('rtc:online-users')
+  handleRtcOnlineUsers(
+    @ConnectedSocket() client: Socket,
+  ): { ok: true; users: string[] } | { ok: false; message: string } {
+    const userId = getSocketData(client).userId;
+    if (!userId) {
+      return { ok: false, message: '未认证' };
+    }
+    return { ok: true, users: Array.from(this.onlineUsers.keys()) };
   }
 
   private extractAccessToken(client: Socket): string | undefined {
@@ -184,5 +288,28 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     const result = o['result'];
     return { ok: true, payload: { id, success: o['success'], result } };
+  }
+
+  private parseRtcTargetBody(body: unknown): { ok: true; targetUserId: string } | { ok: false; message: string } {
+    if (!body || typeof body !== 'object') {
+      return { ok: false, message: 'body 须为对象' };
+    }
+    const targetUserId = (body as Record<string, unknown>)['targetUserId'];
+    if (typeof targetUserId !== 'string' || !targetUserId.trim()) {
+      return { ok: false, message: '缺少 targetUserId' };
+    }
+    return { ok: true, targetUserId: targetUserId.trim() };
+  }
+
+  private parseRtcSignalBody(body: unknown): { ok: true; targetUserId: string; signal: unknown } | { ok: false; message: string } {
+    const targetParsed = this.parseRtcTargetBody(body);
+    if (targetParsed.ok === false) {
+      return targetParsed;
+    }
+    const signal = (body as Record<string, unknown>)['signal'];
+    if (signal === undefined) {
+      return { ok: false, message: '缺少 signal' };
+    }
+    return { ok: true, targetUserId: targetParsed.targetUserId, signal };
   }
 }

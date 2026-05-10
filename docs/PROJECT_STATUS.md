@@ -94,7 +94,7 @@
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
-| 6-1 | WebSocket 信令服务 | ⬜ | | |
+| 6-1 | WebSocket 信令服务 | ✅ | 2026-05-10 | `AppGateway` 完成 `rtc:call/answer/reject/signal/hangup/online-users` 事件转发与在线用户查询 |
 | 6-2 | PeerJS 语音通话 | ⬜ | | |
 | 6-3 | 音频文件发送 | ⬜ | | |
 | 6-4 | Whisper STT 转文字 | ⬜ | | |
@@ -148,3 +148,4 @@
 | 2026-05-10 | Phase 5 Step 5-3：`packages/agent` 新增 `src/rag/retriever.py`（按 `role_ids` 过滤检索 `knowledge_base`）与 `src/tools/builtin/rag_tool.py`，并在 builtin 工具注册中心接入 `search_knowledge_base` |
 | 2026-05-10 | Phase 5 Step 5-4：前端新增 `api/modules/knowledge.ts`，实现 `KnowledgeListView.vue`（列表、`.txt/.md/.pdf` 上传与进度、删除、角色权限多选弹窗），并将 `/knowledge` 路由切换至新页面 |
 | 2026-05-10 | Phase 5 Step 5-5：`packages/backend` 在 Agent 转发输入中新增 `user_role_ids`（来自 JWT 用户角色 ID 列表）；`packages/agent` 在 `AgentState` 增加该字段，并在工具执行阶段将 `role_ids` 注入 `search_knowledge_base`，移除 admin 硬编码，实现按角色权限检索 |
+| 2026-05-10 | Phase 6 Step 6-1：`AppGateway` 完成 WebRTC 信令事件 `rtc:call/answer/reject/signal/hangup` 与 `rtc:online-users` 在线用户查询，补充 `app.gateway.spec.ts` 覆盖核心转发链路与断线清理 |
