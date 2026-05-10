@@ -35,7 +35,9 @@ export class AdminBootstrapService implements OnModuleInit {
   }
 
   private async ensureAdminSetup(): Promise<void> {
-    let wildcard = await this.permissionDao.findByCode(WILDCARD_PERMISSION_CODE);
+    let wildcard = await this.permissionDao.findByCode(
+      WILDCARD_PERMISSION_CODE,
+    );
     if (!wildcard) {
       wildcard = await this.permissionDao.create({
         code: WILDCARD_PERMISSION_CODE,

@@ -7,7 +7,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Permission } from '../../permission/permission.entity';
 import { Role } from '../../role/role.entity';
-import { PaginatedResult, PaginationQuery } from '../interfaces/base-dao.interface';
+import {
+  PaginatedResult,
+  PaginationQuery,
+} from '../interfaces/base-dao.interface';
 import { IRoleDao } from '../interfaces/role-dao.interface';
 import { resolvePagination, toPaginatedResult } from './pagination';
 
@@ -77,7 +80,11 @@ export class RoleDaoSqlite implements IRoleDao {
       });
     }
     const total = await qb.getCount();
-    const items = await qb.orderBy('r.createdAt', 'DESC').skip(skip).take(pageSize).getMany();
+    const items = await qb
+      .orderBy('r.createdAt', 'DESC')
+      .skip(skip)
+      .take(pageSize)
+      .getMany();
     return toPaginatedResult(items, total, page, pageSize);
   }
 

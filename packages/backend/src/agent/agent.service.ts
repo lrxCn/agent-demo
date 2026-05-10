@@ -35,7 +35,10 @@ export class AgentService {
   ) {}
 
   /** WebSocket 缓存与请求体中的工具名合并（去重），供 LangGraph 注入前端工具 */
-  private mergeAvailableFrontendTools(userId: string, dtoTools: string[] | undefined): string[] {
+  private mergeAvailableFrontendTools(
+    userId: string,
+    dtoTools: string[] | undefined,
+  ): string[] {
     const fromWs = this.userFrontendTools.getTools(userId);
     const fromDto = dtoTools ?? [];
     return [...new Set([...fromWs, ...fromDto])];
@@ -54,15 +57,23 @@ export class AgentService {
     const base = this.getBaseUrl();
     try {
       const { data } = await firstValueFrom(
-        this.http.post<LangGraphThreadCreateResponse>(`${base}/threads`, {}, { timeout: 30_000 }),
+        this.http.post<LangGraphThreadCreateResponse>(
+          `${base}/threads`,
+          {},
+          { timeout: 30_000 },
+        ),
       );
       if (!data?.thread_id) {
-        throw new BadGatewayException('LangGraph 创建 thread 响应缺少 thread_id');
+        throw new BadGatewayException(
+          'LangGraph 创建 thread 响应缺少 thread_id',
+        );
       }
       return data.thread_id;
     } catch (err) {
       this.logAxiosError('createThread', err);
-      throw err instanceof BadGatewayException ? err : new BadGatewayException('创建对话 thread 失败');
+      throw err instanceof BadGatewayException
+        ? err
+        : new BadGatewayException('创建对话 thread 失败');
     }
   }
 
@@ -76,7 +87,10 @@ export class AgentService {
     user: JwtUser,
   ): AsyncGenerator<AgentChatStreamPayload, void, undefined> {
     const base = this.getBaseUrl();
-    const mergedTools = this.mergeAvailableFrontendTools(user.id, dto.available_tools);
+    const mergedTools = this.mergeAvailableFrontendTools(
+      user.id,
+      dto.available_tools,
+    );
     const available = new Set(mergedTools);
     const emittedToolKeys = new Set<string>();
     let accumulatedText = '';
@@ -95,24 +109,37 @@ export class AgentService {
       stream_mode: ['messages-tuple', 'updates'],
     };
 
-    const res = await this.http.axiosRef.post<Readable>(`${base}/threads/${threadId}/runs/stream`, body, {
-      responseType: 'stream',
-      validateStatus: () => true,
-      timeout: 0,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const res = await this.http.axiosRef.post<Readable>(
+      `${base}/threads/${threadId}/runs/stream`,
+      body,
+      {
+        responseType: 'stream',
+        validateStatus: () => true,
+        timeout: 0,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
 
     if (res.status < 200 || res.status >= 300) {
       const errText = await this.readStreamAsText(res.data);
-      throw new BadGatewayException(`LangGraph 流式调用失败 (${res.status}): ${errText}`);
+      throw new BadGatewayException(
+        `LangGraph 流式调用失败 (${res.status}): ${errText}`,
+      );
     }
 
     const stream = res.data;
     /** 收集 updates 模式下的完整前端工具调用（覆盖策略，保证 params 完整） */
-    const wsToolCalls = new Map<string, { tool: string; params: Record<string, unknown> }>();
+    const wsToolCalls = new Map<
+      string,
+      { tool: string; params: Record<string, unknown> }
+    >();
     try {
       for await (const evt of this.parseSse(stream)) {
-        for (const out of this.mapLangGraphEvent(evt, available, emittedToolKeys)) {
+        for (const out of this.mapLangGraphEvent(
+          evt,
+          available,
+          emittedToolKeys,
+        )) {
           if (out.type === 'token' && out.content) {
             accumulatedText += out.content;
           }
@@ -134,13 +161,22 @@ export class AgentService {
   }
 
   /** 对外统一入口：无 thread 时先创建 */
-  async *chatStream(user: JwtUser, dto: ChatDto): AsyncGenerator<AgentChatStreamPayload, void, undefined> {
-    const threadId = dto.thread_id?.trim() ? dto.thread_id : await this.createThread();
+  async *chatStream(
+    user: JwtUser,
+    dto: ChatDto,
+  ): AsyncGenerator<AgentChatStreamPayload, void, undefined> {
+    const threadId = dto.thread_id?.trim()
+      ? dto.thread_id
+      : await this.createThread();
     yield* this.streamChat(threadId, dto, user);
   }
 
   /** 通过 WebSocket 向前端推送 tool:invoke 事件 */
-  private pushToolInvoke(userId: string, tool: string, params: Record<string, unknown>): void {
+  private pushToolInvoke(
+    userId: string,
+    tool: string,
+    params: Record<string, unknown>,
+  ): void {
     const socket = this.gateway.getSocketByUserId(userId);
     if (!socket) {
       this.logger.warn(`tool:invoke 推送失败：用户 ${userId} 无在线 WebSocket`);
@@ -148,7 +184,9 @@ export class AgentService {
     }
     const invokeId = crypto.randomUUID();
     socket.emit('tool:invoke', { id: invokeId, tool, params });
-    this.logger.debug(`tool:invoke 已推送 userId=${userId} tool=${tool} id=${invokeId}`);
+    this.logger.debug(
+      `tool:invoke 已推送 userId=${userId} tool=${tool} id=${invokeId}`,
+    );
   }
 
   /**
@@ -173,15 +211,25 @@ export class AgentService {
     }
     // 多 stream_mode 格式：["updates", { chat: { messages: [...] } }]
     let updatesPayload: Record<string, unknown> | undefined;
-    if (Array.isArray(parsed) && parsed.length >= 2 && parsed[0] === 'updates') {
+    if (
+      Array.isArray(parsed) &&
+      parsed.length >= 2 &&
+      parsed[0] === 'updates'
+    ) {
       updatesPayload = parsed[1] as Record<string, unknown>;
-    } else if (evt.event === 'updates' && parsed && typeof parsed === 'object') {
+    } else if (
+      evt.event === 'updates' &&
+      parsed &&
+      typeof parsed === 'object'
+    ) {
       updatesPayload = parsed as Record<string, unknown>;
     }
     if (!updatesPayload) {
       return;
     }
-    const chatUpdate = updatesPayload.chat as { messages?: unknown[] } | undefined;
+    const chatUpdate = updatesPayload.chat as
+      | { messages?: unknown[] }
+      | undefined;
     if (!chatUpdate?.messages || !Array.isArray(chatUpdate.messages)) {
       return;
     }
@@ -203,7 +251,11 @@ export class AgentService {
           continue;
         }
         let params: Record<string, unknown> = {};
-        if (obj.args && typeof obj.args === 'object' && !Array.isArray(obj.args)) {
+        if (
+          obj.args &&
+          typeof obj.args === 'object' &&
+          !Array.isArray(obj.args)
+        ) {
           params = obj.args as Record<string, unknown>;
         }
         // 只收集有实际参数的 tool_call
@@ -217,7 +269,10 @@ export class AgentService {
   private async *parseSse(
     readable: Readable,
   ): AsyncGenerator<{ event: string; data: string }, void, undefined> {
-    const rl = readline.createInterface({ input: readable, crlfDelay: Infinity });
+    const rl = readline.createInterface({
+      input: readable,
+      crlfDelay: Infinity,
+    });
     let eventName = 'message';
     const dataLines: string[] = [];
     try {
@@ -264,19 +319,35 @@ export class AgentService {
     }
 
     // 多 stream_mode：["messages-tuple", payload] 或 ["updates", payload]
-    if (Array.isArray(parsed) && parsed.length >= 2 && typeof parsed[0] === 'string') {
+    if (
+      Array.isArray(parsed) &&
+      parsed.length >= 2 &&
+      typeof parsed[0] === 'string'
+    ) {
       const mode = parsed[0];
       const payload = parsed[1];
       if (mode === 'messages-tuple' || mode === 'messages') {
-        yield* this.extractFromMessagesTuple(payload, availableTools, emittedToolKeys);
+        yield* this.extractFromMessagesTuple(
+          payload,
+          availableTools,
+          emittedToolKeys,
+        );
       } else if (mode === 'updates') {
-        yield* this.extractFromUpdates(payload, availableTools, emittedToolKeys);
+        yield* this.extractFromUpdates(
+          payload,
+          availableTools,
+          emittedToolKeys,
+        );
       }
       return;
     }
 
     if (evt.event === 'messages' || evt.event === 'messages-tuple') {
-      yield* this.extractFromMessagesTuple(parsed, availableTools, emittedToolKeys);
+      yield* this.extractFromMessagesTuple(
+        parsed,
+        availableTools,
+        emittedToolKeys,
+      );
       return;
     }
     if (evt.event === 'updates') {
@@ -290,9 +361,18 @@ export class AgentService {
     emittedToolKeys: Set<string>,
   ): Generator<AgentChatStreamPayload, void, undefined> {
     let msg: Record<string, unknown>;
-    if (Array.isArray(payload) && payload.length >= 1 && payload[0] && typeof payload[0] === 'object') {
+    if (
+      Array.isArray(payload) &&
+      payload.length >= 1 &&
+      payload[0] &&
+      typeof payload[0] === 'object'
+    ) {
       msg = payload[0] as Record<string, unknown>;
-    } else if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    } else if (
+      payload &&
+      typeof payload === 'object' &&
+      !Array.isArray(payload)
+    ) {
       msg = payload as Record<string, unknown>;
     } else {
       return;
@@ -325,7 +405,11 @@ export class AgentService {
     if (!last || typeof last !== 'object') {
       return;
     }
-    yield* this.emitToolCallsFromMessage(last as Record<string, unknown>, availableTools, emittedToolKeys);
+    yield* this.emitToolCallsFromMessage(
+      last as Record<string, unknown>,
+      availableTools,
+      emittedToolKeys,
+    );
   }
 
   private *emitToolCallsFromMessage(
@@ -352,14 +436,22 @@ export class AgentService {
         continue;
       }
       let params: Record<string, unknown> = {};
-      if (obj.args && typeof obj.args === 'object' && !Array.isArray(obj.args)) {
+      if (
+        obj.args &&
+        typeof obj.args === 'object' &&
+        !Array.isArray(obj.args)
+      ) {
         params = obj.args as Record<string, unknown>;
       } else if (obj.function && typeof obj.function === 'object') {
         const fn = obj.function as { arguments?: unknown };
         if (typeof fn.arguments === 'string') {
           try {
             const parsed = JSON.parse(fn.arguments) as unknown;
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            if (
+              parsed &&
+              typeof parsed === 'object' &&
+              !Array.isArray(parsed)
+            ) {
               params = parsed as Record<string, unknown>;
             }
           } catch {
@@ -368,7 +460,11 @@ export class AgentService {
         }
       }
       // OpenAI 流式 arguments 可能尚未拼完，避免重复下发不完整 params
-      if (obj.function && typeof obj.function === 'object' && Object.keys(params).length === 0) {
+      if (
+        obj.function &&
+        typeof obj.function === 'object' &&
+        Object.keys(params).length === 0
+      ) {
         const fn = obj.function as { arguments?: unknown };
         if (typeof fn.arguments === 'string' && fn.arguments.trim() === '') {
           continue;
@@ -385,7 +481,9 @@ export class AgentService {
       stream.on('data', (c: Buffer | string) => {
         chunks.push(typeof c === 'string' ? Buffer.from(c) : c);
       });
-      stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8').slice(0, 2000)));
+      stream.on('end', () =>
+        resolve(Buffer.concat(chunks).toString('utf8').slice(0, 2000)),
+      );
       stream.on('error', reject);
     });
   }
@@ -394,7 +492,9 @@ export class AgentService {
     if (typeof err === 'object' && err !== null && 'response' in err) {
       const r = err as { response?: { status?: number; data?: unknown } };
       this.logger.error(
-        `${context} 失败 status=${r.response?.status} data=${JSON.stringify(r.response?.data)}`,
+        `${context} 失败 status=${r.response?.status} data=${JSON.stringify(
+          r.response?.data,
+        )}`,
       );
       return;
     }

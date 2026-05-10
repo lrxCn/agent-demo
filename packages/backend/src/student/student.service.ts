@@ -63,7 +63,9 @@ export class StudentService {
     await this.studentDao.delete(id);
   }
 
-  async batchCreate(dto: BatchCreateStudentsDto): Promise<{ items: PublicStudent[] }> {
+  async batchCreate(
+    dto: BatchCreateStudentsDto,
+  ): Promise<{ items: PublicStudent[] }> {
     const nos = dto.items.map((i) => i.student_no);
     const unique = new Set(nos);
     if (unique.size !== nos.length) {

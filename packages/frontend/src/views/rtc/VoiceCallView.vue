@@ -13,6 +13,8 @@ const {
   activeUserId,
   callDurationSec,
   recordedBlob,
+  isTranscribing,
+  transcribedText,
   isSendingAudioFile,
   sendingProgress,
   sendingFileName,
@@ -91,7 +93,7 @@ function handleReject() {
 }
 
 function handleHangup() {
-  hangup()
+  void hangup()
 }
 
 function handlePickAudioFile(event: Event) {
@@ -153,6 +155,14 @@ function handlePickAudioFile(event: Event) {
             <a-tag>空闲</a-tag>
           </div>
           <a-button type="outline" status="danger" :disabled="!activeUserId" @click="handleHangup">挂断</a-button>
+          <a-tag v-if="isTranscribing" color="gold">录音转写中...</a-tag>
+          <a-alert
+            v-if="transcribedText"
+            type="info"
+            show-icon
+            title="最近一次转写结果"
+            :content="transcribedText"
+          />
         </a-space>
       </a-card>
 

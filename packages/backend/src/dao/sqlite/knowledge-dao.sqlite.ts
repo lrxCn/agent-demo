@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { KnowledgeBase } from '../../knowledge/knowledge-base.entity';
-import { PaginatedResult, PaginationQuery } from '../interfaces/base-dao.interface';
+import {
+  PaginatedResult,
+  PaginationQuery,
+} from '../interfaces/base-dao.interface';
 import { IKnowledgeDao } from '../interfaces/knowledge-dao.interface';
 import { resolvePagination, toPaginatedResult } from './pagination';
 
@@ -17,16 +20,25 @@ export class KnowledgeDaoSqlite implements IKnowledgeDao {
     return this.repo.findOne({ where: { id } });
   }
 
-  async findAll(query?: PaginationQuery): Promise<PaginatedResult<KnowledgeBase>> {
+  async findAll(
+    query?: PaginationQuery,
+  ): Promise<PaginatedResult<KnowledgeBase>> {
     const { page, pageSize, skip, keyword } = resolvePagination(query);
     const qb = this.repo.createQueryBuilder('k');
     if (keyword) {
-      qb.where('(k.name LIKE :kw OR k.description LIKE :kw OR k.fileName LIKE :kw)', {
-        kw: `%${keyword}%`,
-      });
+      qb.where(
+        '(k.name LIKE :kw OR k.description LIKE :kw OR k.fileName LIKE :kw)',
+        {
+          kw: `%${keyword}%`,
+        },
+      );
     }
     const total = await qb.getCount();
-    const items = await qb.orderBy('k.createdAt', 'DESC').skip(skip).take(pageSize).getMany();
+    const items = await qb
+      .orderBy('k.createdAt', 'DESC')
+      .skip(skip)
+      .take(pageSize)
+      .getMany();
     return toPaginatedResult(items, total, page, pageSize);
   }
 
@@ -35,7 +47,10 @@ export class KnowledgeDaoSqlite implements IKnowledgeDao {
     return this.repo.save(entity);
   }
 
-  async update(id: string, data: Partial<KnowledgeBase>): Promise<KnowledgeBase> {
+  async update(
+    id: string,
+    data: Partial<KnowledgeBase>,
+  ): Promise<KnowledgeBase> {
     const existing = await this.findById(id);
     if (!existing) {
       throw new NotFoundException(`知识库不存在: ${id}`);

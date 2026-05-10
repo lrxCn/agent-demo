@@ -1,4 +1,10 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 /** Agent 对话请求体 */
 export class ChatDto {

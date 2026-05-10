@@ -1,6 +1,7 @@
 import { Message } from '@arco-design/web-vue'
 import Peer, { type DataConnection, type MediaConnection } from 'peerjs'
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
+import { transcribeAudio } from '../api/modules/agent'
 import { useAuthStore } from '../stores/auth'
 import { getWebSocketClient } from './useWebSocket'
 
@@ -77,6 +78,8 @@ export function useWebRTC() {
   const recorder = shallowRef<MediaRecorder | null>(null)
   const recordChunks = ref<Blob[]>([])
   const recordedBlob = ref<Blob | null>(null)
+  const isTranscribing = ref(false)
+  const transcribedText = ref('')
   const onlineUserIds = ref<string[]>([])
   const isSendingAudioFile = ref(false)
   const sendingProgress = ref(0)
@@ -270,7 +273,9 @@ export function useWebRTC() {
     })
     socket.on('rtc:hangup', ({ userId }: { userId?: string }) => {
       if (activeUserId.value && userId === activeUserId.value) {
-        clearCallState(true)
+        void finalizeRecordingAndTranscribe().finally(() => {
+          clearCallState(false)
+        })
       }
     })
   }
@@ -334,12 +339,13 @@ export function useWebRTC() {
     pendingCallerId.value = null
   }
 
-  function hangup() {
+  async function hangup() {
     const socket = getWebSocketClient()
     if (activeUserId.value && socket) {
       socket.emit('rtc:hangup', { targetUserId: activeUserId.value })
     }
-    clearCallState(true)
+    await finalizeRecordingAndTranscribe()
+    clearCallState(false)
   }
 
   function startRecording() {
@@ -360,18 +366,47 @@ export function useWebRTC() {
     recorder.value = mediaRecorder
   }
 
-  function stopRecording(): Blob | null {
+  function stopRecording(): Promise<Blob | null> {
     if (!recorder.value) {
-      return recordedBlob.value
+      return Promise.resolve(recordedBlob.value)
     }
-    recorder.value.stop()
-    recorder.value = null
-    return recordedBlob.value
+    return new Promise((resolve) => {
+      const current = recorder.value
+      if (!current) {
+        resolve(recordedBlob.value)
+        return
+      }
+      current.onstop = () => {
+        const blob = new Blob(recordChunks.value, { type: 'audio/webm' })
+        recordedBlob.value = blob
+        resolve(blob)
+      }
+      current.stop()
+      recorder.value = null
+    })
+  }
+
+  async function finalizeRecordingAndTranscribe() {
+    const blob = await stopRecording()
+    if (!blob || blob.size <= 0) {
+      return
+    }
+    try {
+      isTranscribing.value = true
+      const text = await transcribeAudio(blob)
+      transcribedText.value = text
+      Message.success('录音转写完成')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '录音转写失败'
+      Message.error(msg)
+    } finally {
+      isTranscribing.value = false
+    }
   }
 
   function clearCallState(stopRecord: boolean) {
     if (stopRecord) {
-      stopRecording()
+      void stopRecording()
     }
     connection.value?.close()
     connection.value = null
@@ -478,6 +513,8 @@ export function useWebRTC() {
     activeUserId,
     callDurationSec,
     recordedBlob,
+    isTranscribing,
+    transcribedText,
     isSendingAudioFile,
     sendingProgress,
     sendingFileName,

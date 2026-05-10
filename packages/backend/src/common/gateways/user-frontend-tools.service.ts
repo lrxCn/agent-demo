@@ -45,7 +45,9 @@ export class FrontendToolResultBus {
   emitToolResult(userId: string, payload: FrontendToolResultPayload): void {
     const evt: FrontendToolResultEvent = { userId, ...payload };
     this.emitter.emit('tool_result', evt);
-    this.logger.debug(`收到前端工具结果 userId=${userId} id=${payload.id} success=${payload.success}`);
+    this.logger.debug(
+      `收到前端工具结果 userId=${userId} id=${payload.id} success=${payload.success}`,
+    );
   }
 
   onToolResult(handler: (evt: FrontendToolResultEvent) => void): void {

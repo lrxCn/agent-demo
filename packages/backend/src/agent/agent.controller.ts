@@ -1,5 +1,14 @@
-import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import type { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { JwtUser } from '../auth/types/jwt-user.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -7,11 +16,15 @@ import { SkipResponseWrap } from '../common/decorators/skip-response-wrap.decora
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { AgentChatStreamPayload, AgentService } from './agent.service';
 import { ChatDto } from './dto/chat.dto';
+import { SttService } from './stt.service';
 
 @Controller('agent')
 @UseGuards(JwtAuthGuard)
 export class AgentController {
-  constructor(private readonly agentService: AgentService) {}
+  constructor(
+    private readonly agentService: AgentService,
+    private readonly sttService: SttService,
+  ) {}
 
   /**
    * SSE 流式对话（POST + 原始 Response，避免全局 JSON 包装破坏流）
@@ -45,5 +58,18 @@ export class AgentController {
     } finally {
       res.end();
     }
+  }
+
+  @Post('transcribe')
+  @UseInterceptors(FileInterceptor('file'))
+  async transcribe(@UploadedFile() file: Express.Multer.File) {
+    if (!file || !file.buffer || file.size <= 0) {
+      return { code: 1, data: null, message: '请上传有效的录音文件' };
+    }
+    const text = await this.sttService.transcribe(
+      file.buffer,
+      file.originalname || 'call-record.webm',
+    );
+    return { code: 0, data: { text }, message: 'ok' };
   }
 }

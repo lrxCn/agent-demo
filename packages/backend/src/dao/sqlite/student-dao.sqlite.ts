@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Student } from '../../student/student.entity';
-import { PaginatedResult, PaginationQuery } from '../interfaces/base-dao.interface';
+import {
+  PaginatedResult,
+  PaginationQuery,
+} from '../interfaces/base-dao.interface';
 import { IStudentDao } from '../interfaces/student-dao.interface';
 import { resolvePagination, toPaginatedResult } from './pagination';
 
@@ -27,7 +30,11 @@ export class StudentDaoSqlite implements IStudentDao {
       });
     }
     const total = await qb.getCount();
-    const items = await qb.orderBy('s.createdAt', 'DESC').skip(skip).take(pageSize).getMany();
+    const items = await qb
+      .orderBy('s.createdAt', 'DESC')
+      .skip(skip)
+      .take(pageSize)
+      .getMany();
     return toPaginatedResult(items, total, page, pageSize);
   }
 

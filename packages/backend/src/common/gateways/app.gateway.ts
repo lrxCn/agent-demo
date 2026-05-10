@@ -64,7 +64,10 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     try {
-      const payload = await this.jwtService.verifyAsync<{ sub?: string; typ?: string }>(token, {
+      const payload = await this.jwtService.verifyAsync<{
+        sub?: string;
+        typ?: string;
+      }>(token, {
         secret,
       });
       if (payload.typ !== ACCESS_TYP || !payload.sub) {
@@ -111,7 +114,11 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!userId) {
       return { ok: false, message: '未认证' };
     }
-    if (!body || typeof body !== 'object' || !Array.isArray((body as { tools?: unknown }).tools)) {
+    if (
+      !body ||
+      typeof body !== 'object' ||
+      !Array.isArray((body as { tools?: unknown }).tools)
+    ) {
       return { ok: false, message: 'tools 须为字符串数组' };
     }
     const raw = (body as { tools: unknown[] }).tools;
@@ -266,7 +273,10 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     const rawHeader = client.handshake.headers['authorization'];
     const header = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
-    if (typeof header === 'string' && header.toLowerCase().startsWith('bearer ')) {
+    if (
+      typeof header === 'string' &&
+      header.toLowerCase().startsWith('bearer ')
+    ) {
       return header.slice(7).trim();
     }
     return undefined;
@@ -274,7 +284,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private parseToolResultPayload(
     body: unknown,
-  ): { ok: true; payload: FrontendToolResultPayload } | { ok: false; message: string } {
+  ):
+    | { ok: true; payload: FrontendToolResultPayload }
+    | { ok: false; message: string } {
     if (!body || typeof body !== 'object') {
       return { ok: false, message: 'body 须为对象' };
     }
@@ -290,7 +302,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { ok: true, payload: { id, success: o['success'], result } };
   }
 
-  private parseRtcTargetBody(body: unknown): { ok: true; targetUserId: string } | { ok: false; message: string } {
+  private parseRtcTargetBody(
+    body: unknown,
+  ): { ok: true; targetUserId: string } | { ok: false; message: string } {
     if (!body || typeof body !== 'object') {
       return { ok: false, message: 'body 须为对象' };
     }
@@ -301,7 +315,11 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { ok: true, targetUserId: targetUserId.trim() };
   }
 
-  private parseRtcSignalBody(body: unknown): { ok: true; targetUserId: string; signal: unknown } | { ok: false; message: string } {
+  private parseRtcSignalBody(
+    body: unknown,
+  ):
+    | { ok: true; targetUserId: string; signal: unknown }
+    | { ok: false; message: string } {
     const targetParsed = this.parseRtcTargetBody(body);
     if (targetParsed.ok === false) {
       return targetParsed;

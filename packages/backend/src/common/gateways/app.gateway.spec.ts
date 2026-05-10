@@ -3,20 +3,26 @@ import { JwtService } from '@nestjs/jwt';
 import type { Socket } from 'socket.io';
 
 import { AppGateway } from './app.gateway';
-import { FrontendToolResultBus, UserFrontendToolsService } from './user-frontend-tools.service';
+import {
+  FrontendToolResultBus,
+  UserFrontendToolsService,
+} from './user-frontend-tools.service';
 
-type MockSocket = Pick<Socket, 'id' | 'data' | 'connected' | 'handshake' | 'disconnect' | 'emit'>;
+type MockSocket = Pick<
+  Socket,
+  'id' | 'data' | 'connected' | 'handshake' | 'disconnect' | 'emit'
+>;
 
 function createSocket(id: string, token: string): MockSocket {
   return {
     id,
     data: {},
     connected: true,
-    handshake: ({
+    handshake: {
       query: { token },
       auth: {},
       headers: {},
-    } as unknown) as Socket['handshake'],
+    } as unknown as Socket['handshake'],
     disconnect: jest.fn(),
     emit: jest.fn(),
   };
@@ -37,7 +43,12 @@ describe('AppGateway RTC signaling', () => {
     } as unknown as ConfigService;
     const userTools = new UserFrontendToolsService();
     const toolResultBus = new FrontendToolResultBus();
-    gateway = new AppGateway(jwtService, configService, userTools, toolResultBus);
+    gateway = new AppGateway(
+      jwtService,
+      configService,
+      userTools,
+      toolResultBus,
+    );
   });
 
   it('应在 rtc:call 时向目标用户转发 rtc:incoming', async () => {
@@ -47,7 +58,9 @@ describe('AppGateway RTC signaling', () => {
     await gateway.handleConnection(caller as Socket);
     await gateway.handleConnection(callee as Socket);
 
-    const result = gateway.handleRtcCall(caller as Socket, { targetUserId: 'user-callee' });
+    const result = gateway.handleRtcCall(caller as Socket, {
+      targetUserId: 'user-callee',
+    });
 
     expect(result).toEqual({ ok: true });
     expect(callee.emit).toHaveBeenCalledWith(
@@ -63,11 +76,23 @@ describe('AppGateway RTC signaling', () => {
     await gateway.handleConnection(caller as Socket);
     await gateway.handleConnection(callee as Socket);
 
-    expect(gateway.handleRtcAnswer(callee as Socket, { targetUserId: 'user-caller' })).toEqual({ ok: true });
-    expect(caller.emit).toHaveBeenCalledWith('rtc:answered', { userId: 'user-callee' });
+    expect(
+      gateway.handleRtcAnswer(callee as Socket, {
+        targetUserId: 'user-caller',
+      }),
+    ).toEqual({ ok: true });
+    expect(caller.emit).toHaveBeenCalledWith('rtc:answered', {
+      userId: 'user-callee',
+    });
 
-    expect(gateway.handleRtcReject(callee as Socket, { targetUserId: 'user-caller' })).toEqual({ ok: true });
-    expect(caller.emit).toHaveBeenCalledWith('rtc:rejected', { userId: 'user-callee' });
+    expect(
+      gateway.handleRtcReject(callee as Socket, {
+        targetUserId: 'user-caller',
+      }),
+    ).toEqual({ ok: true });
+    expect(caller.emit).toHaveBeenCalledWith('rtc:rejected', {
+      userId: 'user-callee',
+    });
 
     expect(
       gateway.handleRtcSignal(callee as Socket, {
@@ -80,8 +105,14 @@ describe('AppGateway RTC signaling', () => {
       signal: { sdp: 'demo' },
     });
 
-    expect(gateway.handleRtcHangup(callee as Socket, { targetUserId: 'user-caller' })).toEqual({ ok: true });
-    expect(caller.emit).toHaveBeenCalledWith('rtc:hangup', { userId: 'user-callee' });
+    expect(
+      gateway.handleRtcHangup(callee as Socket, {
+        targetUserId: 'user-caller',
+      }),
+    ).toEqual({ ok: true });
+    expect(caller.emit).toHaveBeenCalledWith('rtc:hangup', {
+      userId: 'user-callee',
+    });
   });
 
   it('应返回在线用户列表并在断开后清理', async () => {

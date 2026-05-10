@@ -7,7 +7,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Role } from '../../role/role.entity';
 import { User } from '../../user/user.entity';
-import { PaginatedResult, PaginationQuery } from '../interfaces/base-dao.interface';
+import {
+  PaginatedResult,
+  PaginationQuery,
+} from '../interfaces/base-dao.interface';
 import { IUserDao } from '../interfaces/user-dao.interface';
 import { resolvePagination, toPaginatedResult } from './pagination';
 
@@ -74,7 +77,11 @@ export class UserDaoSqlite implements IUserDao {
       });
     }
     const total = await qb.getCount();
-    const items = await qb.orderBy('u.createdAt', 'DESC').skip(skip).take(pageSize).getMany();
+    const items = await qb
+      .orderBy('u.createdAt', 'DESC')
+      .skip(skip)
+      .take(pageSize)
+      .getMany();
     return toPaginatedResult(items, total, page, pageSize);
   }
 

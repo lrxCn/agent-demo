@@ -42,7 +42,8 @@ export class AuthService {
       });
     }
     const accessTtl = this.config.get<string>('JWT_EXPIRES_IN') ?? '1h';
-    const refreshTtl = this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d';
+    const refreshTtl =
+      this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d';
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
 
     const access_token = this.jwtService.sign(

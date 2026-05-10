@@ -1,10 +1,18 @@
-import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 const pdfParse = require('pdf-parse');
 import { IKnowledgeDao } from '../dao/interfaces/knowledge-dao.interface';
 import { KNOWLEDGE_DAO } from '../dao/dao.tokens';
 import { KnowledgeBase } from './knowledge-base.entity';
 import { CreateKnowledgeDto } from './dto/create-knowledge.dto';
-import { PaginatedResult, PaginationQuery } from '../dao/interfaces/base-dao.interface';
+import {
+  PaginatedResult,
+  PaginationQuery,
+} from '../dao/interfaces/base-dao.interface';
 
 @Injectable()
 export class KnowledgeService {
@@ -15,7 +23,10 @@ export class KnowledgeService {
     private readonly knowledgeDao: IKnowledgeDao,
   ) {}
 
-  async uploadFile(file: Express.Multer.File, dto: CreateKnowledgeDto): Promise<KnowledgeBase> {
+  async uploadFile(
+    file: Express.Multer.File,
+    dto: CreateKnowledgeDto,
+  ): Promise<KnowledgeBase> {
     if (!file) {
       throw new BadRequestException('文件不能为空');
     }
@@ -25,13 +36,19 @@ export class KnowledgeService {
     let textContent = '';
 
     try {
-      if (mimeType === 'text/plain' || mimeType === 'text/markdown' || originalName.endsWith('.md')) {
+      if (
+        mimeType === 'text/plain' ||
+        mimeType === 'text/markdown' ||
+        originalName.endsWith('.md')
+      ) {
         textContent = file.buffer.toString('utf-8');
       } else if (mimeType === 'application/pdf') {
         const data = await pdfParse(file.buffer);
         textContent = data.text;
       } else {
-        throw new BadRequestException('不支持的文件类型。仅支持 .txt, .md, .pdf');
+        throw new BadRequestException(
+          '不支持的文件类型。仅支持 .txt, .md, .pdf',
+        );
       }
     } catch (e) {
       throw new BadRequestException(`解析文件失败: ${(e as Error).message}`);
@@ -68,7 +85,9 @@ export class KnowledgeService {
     return this.knowledgeDao.create(entityData);
   }
 
-  async findAll(query?: PaginationQuery): Promise<PaginatedResult<KnowledgeBase>> {
+  async findAll(
+    query?: PaginationQuery,
+  ): Promise<PaginatedResult<KnowledgeBase>> {
     return this.knowledgeDao.findAll(query);
   }
 
@@ -76,7 +95,10 @@ export class KnowledgeService {
     await this.knowledgeDao.delete(id);
   }
 
-  async assignRoles(knowledgeBaseId: string, roleIds: string[]): Promise<KnowledgeBase> {
+  async assignRoles(
+    knowledgeBaseId: string,
+    roleIds: string[],
+  ): Promise<KnowledgeBase> {
     // 根据当前数据库设计，knowledge_base_roles 为多对多关系。
     // 但是 DAO 层中没有暴露 assignRoles 的方法，如果需要我们可以稍后在 DAO 中实现，或直接利用 TypeORM Repo
     // 此处预留，因为知识库权限通常较复杂

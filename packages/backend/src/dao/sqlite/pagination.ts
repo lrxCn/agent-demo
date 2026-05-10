@@ -1,4 +1,7 @@
-import { PaginatedResult, PaginationQuery } from '../interfaces/base-dao.interface';
+import {
+  PaginatedResult,
+  PaginationQuery,
+} from '../interfaces/base-dao.interface';
 
 /** 规范化分页参数，避免非法页码 */
 export function resolvePagination(query?: PaginationQuery): {

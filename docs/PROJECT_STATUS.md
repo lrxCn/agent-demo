@@ -97,7 +97,7 @@
 | 6-1 | WebSocket 信令服务 | ✅ | 2026-05-10 | `AppGateway` 完成 `rtc:call/answer/reject/signal/hangup/online-users` 事件转发与在线用户查询 |
 | 6-2 | PeerJS 语音通话 | ✅ | 2026-05-10 | 前端新增 `useWebRTC` 与 `VoiceCallView`，完成在线用户呼叫、来电接听/拒绝、通话中挂断与自动录音 |
 | 6-3 | 音频文件发送 | ✅ | 2026-05-10 | PeerJS DataChannel 分片发送音频文件，支持发送/接收进度与接收端播放 |
-| 6-4 | Whisper STT 转文字 | ⬜ | | |
+| 6-4 | Whisper STT 转文字 | ✅ | 2026-05-10 | 新增 `POST /api/v1/agent/transcribe`，通话挂断自动上传录音并完成转写 |
 | 6-5 | 通话文本存 RAG | ⬜ | | |
 | 6-6 | AI 查询通话内容 | ⬜ | | |
 
@@ -151,3 +151,4 @@
 | 2026-05-10 | Phase 6 Step 6-1：`AppGateway` 完成 WebRTC 信令事件 `rtc:call/answer/reject/signal/hangup` 与 `rtc:online-users` 在线用户查询，补充 `app.gateway.spec.ts` 覆盖核心转发链路与断线清理 |
 | 2026-05-10 | Phase 6 Step 6-2：前端安装 `peerjs`，新增 `useWebRTC.ts`（Peer 初始化、呼叫/接听/挂断、在线用户查询、MediaRecorder 录音）与 `VoiceCallView.vue`（在线用户列表、来电弹窗、通话状态面板），并将 `/rtc` 路由切换到新页面 |
 | 2026-05-10 | Phase 6 Step 6-3：在 `useWebRTC.ts` 增加 PeerJS DataChannel 音频文件分片协议（`audio-meta/chunk/end`），支持发送与接收进度；`VoiceCallView.vue` 增加音频文件选择发送、发送进度展示、接收文件列表与 HTML5 Audio 播放 |
+| 2026-05-10 | Phase 6 Step 6-4：后端新增 `SttService` 对接 SiliconFlow Whisper（`FunAudioLLM/SenseVoiceSmall`）与 `POST /api/v1/agent/transcribe` 上传接口；前端 `useWebRTC` 在挂断时自动停止录音并上传转写，`VoiceCallView` 展示转写中状态和最近一次转写文本 |

@@ -1,3 +1,5 @@
+import request, { unwrapApiData } from '../request'
+
 /** Agent SSE 对话请求体 */
 export interface StreamChatRequestBody {
   message: string
@@ -26,4 +28,16 @@ export function streamChat(
     body: JSON.stringify(data),
     signal,
   })
+}
+
+interface TranscribeResponse {
+  text: string
+}
+
+export async function transcribeAudio(file: Blob, filename = 'call-record.webm'): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file, filename)
+  const body = await request.post('/agent/transcribe', formData)
+  const data = unwrapApiData<TranscribeResponse>(body)
+  return data.text
 }
