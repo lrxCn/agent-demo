@@ -9,6 +9,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { io, type Socket } from 'socket.io-client'
 import { useAuthStore } from '../stores/auth'
 import { useToolExecutor } from './useToolExecutor'
+import { bindSocketToRegistry } from './useToolRegistry'
 
 /** tool:invoke 事件负载（与后端 pushToolInvoke 对齐） */
 interface ToolInvokePayload {
@@ -44,10 +45,12 @@ export function useWebSocket() {
 
     s.on('connect', () => {
       connected.value = true
+      bindSocketToRegistry(s)
     })
 
     s.on('disconnect', () => {
       connected.value = false
+      bindSocketToRegistry(null)
     })
 
     s.on('connect_error', () => {

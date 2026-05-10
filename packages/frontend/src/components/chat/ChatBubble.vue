@@ -5,6 +5,7 @@ import MarkdownIt from 'markdown-it'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useChat } from '../../composables/useChat'
 import { useChatStore } from '../../stores/chat'
+import { getRegisteredToolNames } from '../../composables/useToolRegistry'
 
 const chat = useChatStore()
 const { sendMessage } = useChat()
@@ -69,9 +70,8 @@ async function onSend(): Promise<void> {
   }
   inputValue.value = ''
   try {
-    // TODO: 4-5 完成后移除此临时硬编码，改为动态注册
     await sendMessage(raw, {
-      available_tools: ['navigate_to_page', 'create_student', 'delete_student', 'query_students'],
+      available_tools: getRegisteredToolNames(),
     })
   } catch (e) {
     Message.error(e instanceof Error ? e.message : '发送失败')

@@ -5,6 +5,7 @@ import ChatBubble from '../chat/ChatBubble.vue'
 import { useAuthStore } from '../../stores/auth'
 import { usePermissionStore } from '../../stores/permission'
 import { useWebSocket } from '../../composables/useWebSocket'
+import { useToolRegistry } from '../../composables/useToolRegistry'
 
 const collapsed = ref(false)
 const route = useRoute()
@@ -14,6 +15,10 @@ const permission = usePermissionStore()
 
 // 全局 WebSocket 连接（tool:invoke 监听）
 useWebSocket()
+
+// 全局注册 navigate_to_page 工具（任何页面都可用）
+const { register } = useToolRegistry()
+register({ name: 'navigate_to_page', description: '导航到指定页面' })
 
 const selectedKeys = computed(() => [route.path])
 

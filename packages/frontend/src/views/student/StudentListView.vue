@@ -14,8 +14,15 @@ import {
   type StudentListItem,
 } from '../../api/modules/student'
 import { useAuthStore } from '../../stores/auth'
+import { useToolRegistry } from '../../composables/useToolRegistry'
 
 const auth = useAuthStore()
+
+// 注册学生相关前端工具（离开页面时自动注销）
+const { register } = useToolRegistry()
+register({ name: 'create_student', description: '创建新学生', requireConfirm: true })
+register({ name: 'delete_student', description: '删除学生', requireConfirm: true })
+register({ name: 'query_students', description: '查询学生列表' })
 
 function hasPermission(code: string): boolean {
   return auth.hasPermission(code)
