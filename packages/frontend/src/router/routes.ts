@@ -45,7 +45,7 @@ export const routes: RouteRecordRaw[] = [
       {
         path: 'rtc',
         name: 'Rtc',
-        component: () => import('../views/rtc/RtcView.vue'),
+        component: () => import('../views/rtc/VoiceCallView.vue'),
         meta: { title: '语音通话' },
       },
     ],

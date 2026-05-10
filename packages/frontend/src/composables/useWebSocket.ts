@@ -18,11 +18,18 @@ interface ToolInvokePayload {
   params: Record<string, unknown>
 }
 
+const sharedSocket = ref<Socket | null>(null)
+const sharedConnected = ref(false)
+
+export function getWebSocketClient(): Socket | null {
+  return sharedSocket.value
+}
+
 export function useWebSocket() {
   const auth = useAuthStore()
   const { execute } = useToolExecutor()
-  const socket = ref<Socket | null>(null)
-  const connected = ref(false)
+  const socket = sharedSocket
+  const connected = sharedConnected
 
   function connect(): void {
     const token = auth.token?.trim()
@@ -31,8 +38,8 @@ export function useWebSocket() {
     }
 
     // 断开旧连接
-    if (socket.value) {
-      socket.value.disconnect()
+    if (sharedSocket.value) {
+      sharedSocket.value.disconnect()
     }
 
     const s = io('/ws', {
@@ -44,17 +51,17 @@ export function useWebSocket() {
     })
 
     s.on('connect', () => {
-      connected.value = true
+      sharedConnected.value = true
       bindSocketToRegistry(s)
     })
 
     s.on('disconnect', () => {
-      connected.value = false
+      sharedConnected.value = false
       bindSocketToRegistry(null)
     })
 
     s.on('connect_error', () => {
-      connected.value = false
+      sharedConnected.value = false
     })
 
     // 监听后端推送的 tool:invoke 事件
@@ -86,14 +93,14 @@ export function useWebSocket() {
       }
     })
 
-    socket.value = s
+    sharedSocket.value = s
   }
 
   function disconnect(): void {
-    if (socket.value) {
-      socket.value.disconnect()
-      socket.value = null
-      connected.value = false
+    if (sharedSocket.value) {
+      sharedSocket.value.disconnect()
+      sharedSocket.value = null
+      sharedConnected.value = false
     }
   }
 
