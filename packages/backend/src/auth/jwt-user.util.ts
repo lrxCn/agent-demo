@@ -3,6 +3,7 @@ import { JwtUser } from './types/jwt-user.types';
 
 /** 将带角色与权限的 User 实体转为 JWT 用户载荷 */
 export function userEntityToJwtUser(user: User): JwtUser {
+  const roleIds = (user.roles ?? []).map((r) => r.id);
   const roleNames = (user.roles ?? []).map((r) => r.name);
   const permissionCodes = new Set<string>();
   for (const role of user.roles ?? []) {
@@ -14,6 +15,7 @@ export function userEntityToJwtUser(user: User): JwtUser {
     id: user.id,
     username: user.username,
     nickname: user.nickname,
+    roleIds,
     roleNames,
     permissionCodes: [...permissionCodes],
   };

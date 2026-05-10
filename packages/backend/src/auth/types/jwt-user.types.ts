@@ -3,6 +3,7 @@ export interface JwtUser {
   id: string;
   username: string;
   nickname: string;
+  roleIds: string[];
   roleNames: string[];
   permissionCodes: string[];
 }

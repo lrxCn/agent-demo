@@ -86,6 +86,7 @@ export class AgentService {
       mem0_user_id: user.id,
       thread_id: threadId,
       available_frontend_tools: mergedTools,
+      user_role_ids: user.roleIds,
     };
 
     const body = {

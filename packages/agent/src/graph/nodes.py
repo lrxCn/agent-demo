@@ -142,10 +142,13 @@ def tool_node_with_retry(state: AgentState) -> dict[str, list[BaseMessage]]:
 
     all_tools = registry.get_all_tools()
     tool_map = {t.name: t for t in all_tools}
+    user_role_ids = state.get('user_role_ids') or []
 
     results: list[ToolMessage] = []
     for tool_call in last_message.tool_calls:
         tool_name, tool_input, tool_call_id = _tool_call_parts(tool_call)
+        if tool_name == 'search_knowledge_base':
+            tool_input['role_ids'] = user_role_ids
 
         tool = tool_map.get(tool_name)
         if not tool:

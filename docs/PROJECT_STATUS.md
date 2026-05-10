@@ -88,7 +88,7 @@
 | 5-2 | Embedding + Qdrant 存储 | ✅ | 2026-05-10 | Agent 新增 `rag/indexer.py`，并通过 LangGraph 自定义路由暴露 `POST /knowledge/ingest` |
 | 5-3 | RAG 检索 (按角色过滤) | ✅ | 2026-05-10 | Agent 新增 `rag/retriever.py` 和 `search_knowledge_base` 工具，支持按 `role_ids` 过滤召回 |
 | 5-4 | 知识库管理页面 | ✅ | 2026-05-10 | 前端新增知识库 API 模块、管理页（列表/上传进度/删除/角色权限弹窗）与路由切换 |
-| 5-5 | 集成到 Agent 对话 | ⬜ | | |
+| 5-5 | 集成到 Agent 对话 | ✅ | 2026-05-10 | Agent state 增加 `user_role_ids`，后端从 JWT 用户角色透传，RAG 工具按角色过滤生效 |
 
 ## Phase 6: WebRTC 语音 (预计 3 天)
 
@@ -147,3 +147,4 @@
 | 2026-05-10 | Phase 5 Step 5-2：`packages/agent` 新增 `src/rag/indexer.py`（切片+Embedding+Qdrant upsert），新增 `src/webapp.py` 暴露 `POST /knowledge/ingest`，并在 `langgraph.json` 中挂载 `http.app` 供后端触发索引 |
 | 2026-05-10 | Phase 5 Step 5-3：`packages/agent` 新增 `src/rag/retriever.py`（按 `role_ids` 过滤检索 `knowledge_base`）与 `src/tools/builtin/rag_tool.py`，并在 builtin 工具注册中心接入 `search_knowledge_base` |
 | 2026-05-10 | Phase 5 Step 5-4：前端新增 `api/modules/knowledge.ts`，实现 `KnowledgeListView.vue`（列表、`.txt/.md/.pdf` 上传与进度、删除、角色权限多选弹窗），并将 `/knowledge` 路由切换至新页面 |
+| 2026-05-10 | Phase 5 Step 5-5：`packages/backend` 在 Agent 转发输入中新增 `user_role_ids`（来自 JWT 用户角色 ID 列表）；`packages/agent` 在 `AgentState` 增加该字段，并在工具执行阶段将 `role_ids` 注入 `search_knowledge_base`，移除 admin 硬编码，实现按角色权限检索 |

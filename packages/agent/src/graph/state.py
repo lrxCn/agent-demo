@@ -12,5 +12,6 @@ class AgentState(TypedDict):
     mem0_user_id: str
     thread_id: str
     available_frontend_tools: list[str]
+    user_role_ids: NotRequired[list[str]]
     # 由 memory_search_node 写入；invoke 时可不传
     retrieved_memories: NotRequired[list[str]]
