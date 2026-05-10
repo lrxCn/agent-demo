@@ -4,8 +4,9 @@
  * 根据工具名找到对应的 handler 并执行。
  * 部分工具需要用户通过弹窗确认后才执行。
  */
-import { Modal } from '@arco-design/web-vue'
+import { Modal, Message } from '@arco-design/web-vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import {
   createStudent as apiCreateStudent,
   deleteStudent as apiDeleteStudent,
@@ -42,6 +43,21 @@ export function useToolExecutor() {
   async function handleNavigateToPage(params: Record<string, unknown>): Promise<ToolResult> {
     const path = String(params.path ?? '/')
     const msg = String(params.confirm_message || `确认跳转到 ${path}？`)
+
+    // 权限校验拦截
+    const auth = useAuthStore()
+    const targetRoute = router.resolve(path)
+    const required = targetRoute.matched
+      .map((r) => r.meta.permissions)
+      .find((p) => Array.isArray(p) && p.length > 0) as string[] | undefined
+
+    if (required?.length) {
+      const allowed = required.every((code) => auth.hasPermission(code))
+      if (!allowed) {
+        Message.error('抱歉，您没有权限访问该页面')
+        return { success: false, result: '用户无权访问目标页面' }
+      }
+    }
 
     const ok = await confirmAction('页面导航', msg)
     if (!ok) {

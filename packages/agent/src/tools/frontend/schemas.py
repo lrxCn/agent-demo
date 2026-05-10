@@ -3,15 +3,26 @@
 这些工具由 Agent 结构化输出发起调用请求，经 NestJS 转发后由前端实际执行。
 Agent 端仅包含 schema（参数定义 + 描述），不执行真实业务逻辑。
 """
+from typing import Literal
 from langchain_core.tools import tool
 
 
 @tool
-def navigate_to_page(path: str, confirm_message: str = "") -> str:
-    """导航到指定页面。需要用户确认后才会执行。
+def navigate_to_page(
+    path: Literal["/dashboard", "/users", "/roles", "/students", "/knowledge"], 
+    confirm_message: str = ""
+) -> str:
+    """导航到指定的系统页面。当用户要求“跳转/打开/去XXX页面”时，必须调用此工具。
+
+    可用路径及对应页面如下：
+    - /dashboard : 仪表盘 / 首页
+    - /users : 用户管理
+    - /roles : 角色管理
+    - /students : 学生管理
+    - /knowledge : 知识库
 
     Args:
-        path: 目标页面路径，如 /students, /users, /roles
+        path: 目标页面的路径（必须是上方列出的可选值之一）
         confirm_message: 显示给用户的确认信息
     """
     return f"请求导航到 {path}"
