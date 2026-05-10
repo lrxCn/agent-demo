@@ -3,6 +3,7 @@ from src.tools.builtin.datetime_tool import get_current_time
 from src.tools.builtin.debug_fail_tool import debug_always_fail
 from src.tools.builtin.debug_sleep_tool import debug_sleep_seconds
 from src.tools.builtin.math_tool import calculate
+from src.tools.builtin.rag_tool import search_knowledge_base
 from src.tools.registry import registry
 
 
@@ -19,4 +20,9 @@ def register_builtin_tools() -> None:
         debug_always_fail,
         category='builtin',
         tags=['debug', 'utility'],
+    )
+    registry.register(
+        search_knowledge_base,
+        category='builtin',
+        tags=['knowledge', 'rag', 'query'],
     )

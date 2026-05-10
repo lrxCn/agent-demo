@@ -86,7 +86,7 @@
 |------|------|------|----------|------|
 | 5-1 | 文件上传 + 文本解析 | ✅ | 2026-05-10 | 安装 multer/pdf-parse，创建 KnowledgeModule 接收 txt/md/pdf 上传，解析文本并存入 SQLite，预留发给 Agent 的接口通路 |
 | 5-2 | Embedding + Qdrant 存储 | ✅ | 2026-05-10 | Agent 新增 `rag/indexer.py`，并通过 LangGraph 自定义路由暴露 `POST /knowledge/ingest` |
-| 5-3 | RAG 检索 (按角色过滤) | ⬜ | | |
+| 5-3 | RAG 检索 (按角色过滤) | ✅ | 2026-05-10 | Agent 新增 `rag/retriever.py` 和 `search_knowledge_base` 工具，支持按 `role_ids` 过滤召回 |
 | 5-4 | 知识库管理页面 | ⬜ | | |
 | 5-5 | 集成到 Agent 对话 | ⬜ | | |
 
@@ -145,3 +145,4 @@
 | 2026-05-10 | Phase 4 Step 4-6：修复了对话 CRUD 中，代理成功创建/删除后页面列表未更新的问题。在 `useToolExecutor` 加入 `CustomEvent('student:refresh')` 派发逻辑，`StudentListView` 监听此事件执行刷新 |
 | 2026-05-10 | Phase 5 Step 5-1：创建 `KnowledgeModule`、`KnowledgeController` 和 `KnowledgeService`。引入 `multer` 和 `pdf-parse`，实现 `POST /api/v1/knowledge/upload` 接口，支持 `.txt`, `.md`, `.pdf` 文本解析，并将知识库元数据存入 `knowledge_bases` 表，为下一步集成 Agent 向量化预留了 HTTP 发送逻辑 |
 | 2026-05-10 | Phase 5 Step 5-2：`packages/agent` 新增 `src/rag/indexer.py`（切片+Embedding+Qdrant upsert），新增 `src/webapp.py` 暴露 `POST /knowledge/ingest`，并在 `langgraph.json` 中挂载 `http.app` 供后端触发索引 |
+| 2026-05-10 | Phase 5 Step 5-3：`packages/agent` 新增 `src/rag/retriever.py`（按 `role_ids` 过滤检索 `knowledge_base`）与 `src/tools/builtin/rag_tool.py`，并在 builtin 工具注册中心接入 `search_knowledge_base` |
