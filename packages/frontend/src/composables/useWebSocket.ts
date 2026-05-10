@@ -5,8 +5,8 @@
  * 监听 tool:invoke 事件，调用 useToolExecutor 执行，回传 tool:result。
  */
 import { Message } from '@arco-design/web-vue'
-import { onMounted, onUnmounted, ref } from 'vue'
-import { io, type Socket } from 'socket.io-client'
+import { onMounted, onUnmounted, shallowRef } from 'vue'
+import { io } from 'socket.io-client'
 import { useAuthStore } from '../stores/auth'
 import { useToolExecutor } from './useToolExecutor'
 import { bindSocketToRegistry } from './useToolRegistry'
@@ -18,10 +18,12 @@ interface ToolInvokePayload {
   params: Record<string, unknown>
 }
 
-const sharedSocket = ref<Socket | null>(null)
-const sharedConnected = ref(false)
+type WebSocketClient = ReturnType<typeof io>
 
-export function getWebSocketClient(): Socket | null {
+const sharedSocket = shallowRef<WebSocketClient | null>(null)
+const sharedConnected = shallowRef(false)
+
+export function getWebSocketClient(): WebSocketClient | null {
   return sharedSocket.value
 }
 

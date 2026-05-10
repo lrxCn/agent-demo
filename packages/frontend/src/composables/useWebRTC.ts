@@ -1,6 +1,6 @@
 import { Message } from '@arco-design/web-vue'
 import Peer, { type MediaConnection } from 'peerjs'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, shallowRef } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { getWebSocketClient } from './useWebSocket'
 
@@ -24,8 +24,8 @@ function buildPeerConfig() {
 export function useWebRTC() {
   const auth = useAuthStore()
 
-  const peer = ref<Peer | null>(null)
-  const connection = ref<MediaConnection | null>(null)
+  const peer = shallowRef<Peer | null>(null)
+  const connection = shallowRef<MediaConnection | null>(null)
   const localStream = ref<MediaStream | null>(null)
   const remoteStream = ref<MediaStream | null>(null)
   const incomingCall = ref<IncomingCallInfo | null>(null)
@@ -33,7 +33,7 @@ export function useWebRTC() {
   const callingUserId = ref<string | null>(null)
   const activeUserId = ref<string | null>(null)
   const startedAt = ref<number | null>(null)
-  const recorder = ref<MediaRecorder | null>(null)
+  const recorder = shallowRef<MediaRecorder | null>(null)
   const recordChunks = ref<Blob[]>([])
   const recordedBlob = ref<Blob | null>(null)
   const onlineUserIds = ref<string[]>([])
