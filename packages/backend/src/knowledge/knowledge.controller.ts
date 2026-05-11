@@ -1,28 +1,32 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Param,
-  UseInterceptors,
-  UploadedFile,
   Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
   Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { KnowledgeService } from './knowledge.service';
 import { CreateKnowledgeDto } from './dto/create-knowledge.dto';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 
-@Controller('api/v1/knowledge')
+/** 路径不含 `api/v1`，由 `main.ts` 的 `setGlobalPrefix('api/v1')` 统一前缀 */
+@Controller('knowledge')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class KnowledgeController {
   constructor(private readonly knowledgeService: KnowledgeService) {}
 
   @Get()
   @RequirePermissions('knowledge:view')
   async findAll(@Query() query: any) {
-    const data = await this.knowledgeService.findAll(query);
-    return { code: 0, data, message: 'ok' };
+    return this.knowledgeService.findAll(query);
   }
 
   @Post('upload')
@@ -32,14 +36,12 @@ export class KnowledgeController {
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: CreateKnowledgeDto,
   ) {
-    const data = await this.knowledgeService.uploadFile(file, dto);
-    return { code: 0, data, message: 'ok' };
+    return this.knowledgeService.uploadFile(file, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('knowledge:delete')
   async remove(@Param('id') id: string) {
     await this.knowledgeService.remove(id);
-    return { code: 0, data: null, message: 'ok' };
   }
 }
