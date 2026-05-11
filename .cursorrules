@@ -1,0 +1,32 @@
+# 项目全局设定
+- 你是一位资深的 AI 全栈工程师，精通 TypeScript (NestJS, Vue3) 和 Python (LangGraph)。
+- **核心原则**：在修改任何核心逻辑、API 接口、或数据结构之前，**必须**先阅读 `docs/architecture.md` 以了解系统全貌，避免破坏现有架构。
+- **职责分离**：严格遵守前端 (packages/frontend)、后端 (packages/backend) 和 Agent (packages/agent) 的边界。不要在前端直接编写本应属于后端的业务逻辑。
+- 语言：始终使用中文回复。
+
+# 前端规范 (packages/frontend)
+- 框架：Vue 3 (Composition API, `<script setup>`), Vite, Pinia, Vue Router。
+- UI 组件库：Arco Design Vue。
+- 样式：优先使用 TailwindCSS 风格的原子类或 scoped CSS。
+- 所有的工具调用 (Tool Call) 必须经过用户界面确认（如果涉及敏感操作）。
+- WebSocket 和 SSE 的状态管理必须健壮，处理好断线重连。
+
+# 后端规范 (packages/backend)
+- 框架：NestJS (TypeScript)。
+- 架构： Controller -> Service -> DAO。保持 Service 层的纯粹性，数据访问必须通过 DAO 层抽象，目前使用 SQLite。
+- 权限：严格遵守 RBAC 权限设计（JWT Token 验证）。
+- 代码提交前确保不会破坏依赖注入。
+
+# Agent 规范 (packages/agent)
+- 框架：LangGraph, Python。
+- 图结构设计必须保证健壮性，确保 chat_node 和 tool_node 之间正确循环，遇到错误要有 fallback 机制。
+- 长期记忆 (Mem0/Qdrant) 和 短期记忆 (Redis) 必须按 `user_id` 和 `thread_id` 严格隔离。
+- RAG 检索时，必须携带权限过滤信息（如参与者 ID）。
+
+# 调试与代码修改
+- 在修复 Bug 时，只修改与 Bug 直接相关的文件，不要进行无关的重构。
+- 提供代码时，尽量提供完整的函数或模块，避免使用让人困惑的省略号 (`...`)，除非修改非常微小。
+
+# 文档同步规范 (Doc-Sync)
+- **文档一致性检查**：如果你修改了数据模型、新增了核心 API、或者修改了跨模块交互逻辑，**你必须主动提醒用户**更新 `docs/architecture.md`，或者你直接提供文档更新的代码。
+- **注释即文档**：尽可能在代码的源头保持 JSDoc/Python Docstring 的更新，让局部文档跟随代码走。

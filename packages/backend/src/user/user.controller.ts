@@ -3,6 +3,7 @@ import {
   Controller,
   DefaultValuePipe,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   ParseIntPipe,
@@ -15,6 +16,8 @@ import { PaginationQuery } from '../dao/interfaces/base-dao.interface';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtUser } from '../auth/types/jwt-user.types';
 import { AssignUserRolesDto } from './dto/assign-user-roles.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -37,8 +40,16 @@ export class UserController {
   }
 
   @Get(':id')
-  @RequirePermissions('user:view')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    // 允许用户读取自己的信息；读取其他用户仍需具备 user:view 权限（或 * 通配）
+    if (user.id !== id) {
+      const canViewOthers =
+        user.permissionCodes.includes('*') ||
+        user.permissionCodes.includes('user:view');
+      if (!canViewOthers) {
+        throw new ForbiddenException('Forbidden resource');
+      }
+    }
     return this.userService.findOne(id);
   }
 
