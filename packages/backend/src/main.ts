@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { PeerServer } from 'peer';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -10,6 +11,10 @@ async function bootstrap() {
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true });
   }
+
+  // 在 9000 端口启动独立的 PeerServer
+  PeerServer({ port: 9000, path: '/peerjs' });
+  console.log('PeerServer is running on port 9000');
 
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api/v1');

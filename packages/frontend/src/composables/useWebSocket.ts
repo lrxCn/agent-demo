@@ -27,6 +27,10 @@ export function getWebSocketClient(): WebSocketClient | null {
   return sharedSocket.value
 }
 
+export function getWebSocketStatus() {
+  return sharedConnected
+}
+
 export function useWebSocket() {
   const auth = useAuthStore()
   const { execute } = useToolExecutor()

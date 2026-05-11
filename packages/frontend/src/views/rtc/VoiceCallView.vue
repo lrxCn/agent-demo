@@ -48,7 +48,6 @@ const durationLabel = computed(() => {
 let timer: number | null = null
 
 onMounted(() => {
-  void refreshOnlineUsers()
   timer = window.setInterval(() => {
     ticker.value += 1
   }, 1000)

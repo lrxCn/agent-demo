@@ -1,9 +1,9 @@
 import { Message } from '@arco-design/web-vue'
 import Peer, { type DataConnection, type MediaConnection } from 'peerjs'
-import { computed, onUnmounted, ref, shallowRef } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { transcribeAudio } from '../api/modules/agent'
 import { useAuthStore } from '../stores/auth'
-import { getWebSocketClient } from './useWebSocket'
+import { getWebSocketClient, getWebSocketStatus } from './useWebSocket'
 
 interface IncomingCallInfo {
   callerUserId: string
@@ -92,9 +92,10 @@ export function useWebRTC() {
     startedAt.value ? Math.floor((Date.now() - startedAt.value) / 1000) : 0,
   )
 
-  function ensureSocket() {
+  function ensureSocket(silent = false) {
     const socket = getWebSocketClient()
     if (!socket || !socket.connected) {
+      if (silent) return null
       throw new Error('WebSocket 未连接，请返回首页稍后重试')
     }
     return socket
@@ -248,7 +249,8 @@ export function useWebRTC() {
   }
 
   function bindSignalingEvents() {
-    const socket = ensureSocket()
+    const socket = ensureSocket(true)
+    if (!socket) return
     socket.off('rtc:incoming')
     socket.off('rtc:answered')
     socket.off('rtc:rejected')
@@ -281,7 +283,8 @@ export function useWebRTC() {
   }
 
   async function refreshOnlineUsers() {
-    const socket = ensureSocket()
+    const socket = ensureSocket(true)
+    if (!socket) return
     const users = await new Promise<string[]>((resolve) => {
       socket.emit('rtc:online-users', (resp: { ok?: boolean; users?: string[] }) => {
         if (resp?.ok && Array.isArray(resp.users)) {
@@ -502,12 +505,26 @@ export function useWebRTC() {
     peer.value = null
   }
 
+  // 监视 socket 和 user，一旦准备就绪就初始化
+  watch(
+    [() => getWebSocketStatus().value, () => auth.user],
+    ([connected, user]) => {
+      if (connected && user) {
+        try {
+          ensurePeer()
+          bindSignalingEvents()
+          void refreshOnlineUsers()
+        } catch (e) {
+          console.warn('RTC 延迟初始化失败:', e)
+        }
+      }
+    },
+    { immediate: true },
+  )
+
   onUnmounted(() => {
     dispose()
   })
-
-  bindSignalingEvents()
-  ensurePeer()
 
   return {
     incomingCall,
