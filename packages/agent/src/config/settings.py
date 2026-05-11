@@ -21,3 +21,7 @@ QDRANT_PORT = int(os.getenv('QDRANT_PORT', '6333'))
 EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'BAAI/bge-large-zh-v1.5')
 # 默认对应 BAAI/bge-large-zh-v1.5 的向量维度（1024）；更换 EMBEDDING_MODEL 时请同步修改
 EMBEDDING_MODEL_DIMS = int(os.getenv('EMBEDDING_MODEL_DIMS', '1024'))
+
+# Rerank 配置
+RERANK_MODEL = os.getenv('RERANK_MODEL', 'BAAI/bge-reranker-v2-m3')
+RERANK_TOP_K = int(os.getenv('RERANK_TOP_K', '5'))

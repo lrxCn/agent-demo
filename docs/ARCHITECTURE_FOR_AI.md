@@ -8,14 +8,14 @@
 本项目是 monorepo，包含 3 个子项目：
 
 1. packages/agent/ — Python LangGraph Agent（端口 8123）
-2. packages/backend/ — NestJS 后端（端口 3000）
+2. packages/backend/ — NestJS 后端（API 端口 3000，PeerServer 信令端口 9000）
 3. packages/frontend/ — Vue3 前端（端口 5173）
 
 ## 通信方式
 
-- 前端 和 后端 之间：REST API（JSON）+ SSE（流式对话）+ WebSocket（工具调用回传 + WebRTC 信令）
+- 前端 和 后端 之间：REST API（JSON）+ SSE（流式对话）+ WebSocket（工具调用回传 + WebRTC 独立端口信令）
 - 后端 和 Agent 之间：HTTP 请求（后端作为代理转发到 LangGraph API）
-- 前端用户之间：WebRTC P2P（通过后端 WebSocket 做信令交换）
+- 前端用户之间：WebRTC P2P（通过后端 9000 端口的 PeerServer 做信令交换）
 
 ## 外部依赖服务
 
@@ -38,7 +38,7 @@
 - src/memory/short_term.py — 获取 Redis checkpointer 实例
 - src/memory/long_term.py — Mem0 实例管理、search_memories()、save_memories()
 - src/rag/indexer.py — 文档切片 + Embedding + Qdrant 存储。支持按 knowledge_base_id 进行权限批量更新和物理删除同步。
-- src/rag/retriever.py — 向量检索。知识库检索需传入用户 role_ids 并使用 MatchAny 过滤；通话记录检索按 participant_ids 过滤。
+- src/rag/retriever.py — 向量检索 + Rerank。知识库检索需传入用户 role_ids 并使用 MatchAny 过滤；通话记录检索按 participant_ids 过滤；引入 BGE-Reranker-V2-M3 进行二阶段精排。
 - src/config/settings.py — 从 .env 读取所有配置
 
 图的执行流程：
@@ -59,8 +59,8 @@ chat_node 中，先从 registry 获取所有 builtin 工具，再根据 state �
 - src/student/ — 学生 CRUD + 批量操作。字段：id, name, student_no, gender, class_name, phone, email, created_at, updated_at。
 - src/agent/ — Agent 代理层。使用 HttpService 转发请求到 LangGraph API（地址由环境变量 LANGGRAPH_API_URL 指定）。SSE 流式转发对话响应。
 - src/knowledge/ — 知识库管理。文件上传、文本提取、调用 Agent 接口执行向量化入库、权限同步及物理删除同步。
-- src/rtc/ — WebRTC 信令（在 WebSocket Gateway 中实现）。
-- src/dao/ — 数据访问抽象层。interfaces/ 定义接口（IUserDao, IRoleDao 等），sqlite/ 提供 TypeORM 实现。dao.module.ts 通过 provide token 绑定实现类，切换数据库只需修改 useClass。
+- src/rtc/ — WebRTC 信令。在 `main.ts` 中独立启动 PeerServer 监听 9000 端口，前端直连绕过 Vite 代理以保证 WebSocket 稳定性。
+- src/agent/ — Agent 代理层。处理 STT 及通话入库。引入 `callId` 机制实现后端去重，确保双端通话挂断后仅触发一次 STT/RAG 流程。dao.module.ts 通过 provide token 绑定实现类，切换数据库只需修改 useClass。
 - src/common/guards/ — JwtAuthGuard、RolesGuard、PermissionsGuard。
 - src/common/decorators/ — @Roles()、@RequirePermissions()、@CurrentUser()。
 - src/common/interceptors/ — ResponseInterceptor 统一包装响应为 { code, data, message } 格式。
@@ -118,6 +118,7 @@ Agent 通过结构化输出返回 tool_call → NestJS 通过 WebSocket 发送 t
 - EMBEDDING_MODEL — 向量嵌入模型
 - REDIS_URL — Redis 连接地址
 - QDRANT_HOST, QDRANT_PORT — Qdrant 连接
+- RERANK_MODEL, RERANK_TOP_K — Rerank 模型及保留数量
 - JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN — JWT 配置
 - LANGGRAPH_API_URL — LangGraph 服务地址
 - LANGSMITH_API_KEY, LANGCHAIN_TRACING_V2 — LangSmith 追踪
@@ -143,7 +144,7 @@ AI对话：POST /api/v1/agent/chat (SSE)
 
 ### 权限过滤原则
 - **存储**：向量数据在 Qdrant 中存储时，Payload 必须包含 `role_ids` 字段（数组类型）。
-- **检索**：Agent 在执行 `retriever` 搜索时，必须从 Context 或 Header 中获取当前用户的 `role_ids`，并在 Qdrant 查询中使用 `MatchAny` 过滤器。
+- **检索**：Agent 执行 `retriever` 搜索时，采用两阶段检索：1) Qdrant 向量初筛 (Top-20)；2) BGE-Reranker 模型精排，最后保留 Top-5 给到 LLM。查询需使用 `MatchAny` 过滤权限。
 
 ### 数据同步触发点
 1. **上传 (Create)**：Backend 存入 DB -> 提取文本 -> 调用 Agent `/knowledge/ingest` (带上 `knowledge_base_id` 和初始权限)。
