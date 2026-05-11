@@ -63,7 +63,7 @@ export async function createRole(payload: CreateRoleInput): Promise<RoleListItem
 }
 
 export async function updateRole(roleId: string, payload: UpdateRoleInput): Promise<RoleListItem> {
-  const body = await request.put<unknown>(`/roles/${roleId}`, payload)
+  const body = await request.post<unknown>(`/roles/${roleId}`, payload)
   const raw = unwrapApiData<Omit<RoleListItem, 'permissions'> & { permissions?: RolePermissionBrief[] }>(body)
   return normalizeRoleItem(raw)
 }
@@ -78,7 +78,7 @@ export async function assignRolePermissions(
   roleId: string,
   permissionIds: string[],
 ): Promise<RoleListItem> {
-  const body = await request.put<unknown>(`/roles/${roleId}/permissions`, { permissionIds })
+  const body = await request.post<unknown>(`/roles/${roleId}/permissions`, { permissionIds })
   const raw = unwrapApiData<Omit<RoleListItem, 'permissions'> & { permissions?: RolePermissionBrief[] }>(body)
   return normalizeRoleItem(raw)
 }

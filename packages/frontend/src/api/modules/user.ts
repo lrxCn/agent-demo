@@ -57,7 +57,7 @@ export async function createUser(payload: CreateUserInput): Promise<UserListItem
 }
 
 export async function updateUser(userId: string, payload: UpdateUserInput): Promise<UserListItem> {
-  const body = await request.put<unknown>(`/users/${userId}`, payload)
+  const body = await request.post<unknown>(`/users/${userId}`, payload)
   return unwrapApiData<UserListItem>(body)
 }
 
@@ -67,6 +67,6 @@ export async function deleteUser(userId: string): Promise<void> {
 }
 
 export async function assignUserRoles(userId: string, roleIds: string[]): Promise<UserListItem> {
-  const body = await request.put<unknown>(`/users/${userId}/roles`, { roleIds })
+  const body = await request.post<unknown>(`/users/${userId}/roles`, { roleIds })
   return unwrapApiData<UserListItem>(body)
 }

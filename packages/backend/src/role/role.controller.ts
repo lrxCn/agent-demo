@@ -7,7 +7,6 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -42,7 +41,7 @@ export class RoleController {
     return this.roleService.create(dto);
   }
 
-  @Put(':id/permissions')
+  @Post(':id/permissions')
   @RequirePermissions('role:assign-permission')
   assignPermissions(
     @Param('id') id: string,
@@ -51,7 +50,7 @@ export class RoleController {
     return this.roleService.assignPermissions(id, dto);
   }
 
-  @Put(':id')
+  @Post(':id')
   @RequirePermissions('role:update')
   update(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
     return this.roleService.update(id, dto);

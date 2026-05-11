@@ -7,7 +7,6 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -62,7 +61,7 @@ export class StudentController {
     return this.studentService.create(dto);
   }
 
-  @Put(':id')
+  @Post(':id')
   @RequirePermissions('student:update')
   update(@Param('id') id: string, @Body() dto: UpdateStudentDto) {
     return this.studentService.update(id, dto);

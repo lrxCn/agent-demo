@@ -6,7 +6,8 @@ import {
 } from '@nestjs/common';
 const pdfParse = require('pdf-parse');
 import { IKnowledgeDao } from '../dao/interfaces/knowledge-dao.interface';
-import { KNOWLEDGE_DAO } from '../dao/dao.tokens';
+import { IRoleDao } from '../dao/interfaces/role-dao.interface';
+import { KNOWLEDGE_DAO, ROLE_DAO } from '../dao/dao.tokens';
 import { KnowledgeBase } from './knowledge-base.entity';
 import { CreateKnowledgeDto } from './dto/create-knowledge.dto';
 import {
@@ -21,6 +22,8 @@ export class KnowledgeService {
   constructor(
     @Inject(KNOWLEDGE_DAO)
     private readonly knowledgeDao: IKnowledgeDao,
+    @Inject(ROLE_DAO)
+    private readonly roleDao: IRoleDao,
   ) {}
 
   async uploadFile(
@@ -54,7 +57,31 @@ export class KnowledgeService {
       throw new BadRequestException(`解析文件失败: ${(e as Error).message}`);
     }
 
-    // 预留与 Agent 通信的逻辑
+    // 1. 入库数据库
+    const entityData: Partial<KnowledgeBase> = {
+      name: dto.name || originalName,
+      description: dto.description || '',
+      fileName: originalName,
+      fileType: mimeType,
+      qdrantCollection: 'knowledge_base',
+    };
+
+    const entity = await this.knowledgeDao.create(entityData);
+
+    // 2. 默认给个 admin 权限
+    const roleIds: string[] = [];
+    try {
+      const adminRole = await this.roleDao.findByName('admin');
+      if (adminRole) {
+        await this.knowledgeDao.assignRoles(entity.id, [adminRole.id]);
+        roleIds.push(adminRole.id);
+        this.logger.log(`为新知识库文档 ${entity.id} 分配了默认 admin 权限`);
+      }
+    } catch (e) {
+      this.logger.warn(`为知识库分配默认权限失败: ${(e as Error).message}`);
+    }
+
+    // 3. 通知 Agent 进行向量化（带上 ID 和 权限信息）
     try {
       const response = await fetch('http://127.0.0.1:8123/knowledge/ingest', {
         method: 'POST',
@@ -62,27 +89,23 @@ export class KnowledgeService {
         body: JSON.stringify({
           filename: originalName,
           text: textContent,
+          knowledge_base_id: entity.id,
+          role_ids: roleIds,
         }),
       });
+
       if (!response.ok) {
         this.logger.warn(`Agent 向量化入库返回状态异常: ${response.status}`);
       } else {
-        this.logger.log(`成功推送给 Agent 向量化: ${originalName}`);
+        this.logger.log(
+          `成功推送给 Agent 向量化: ${originalName} (ID: ${entity.id})`,
+        );
       }
     } catch (e) {
       this.logger.warn(`向 Agent 发送文件文本失败: ${(e as Error).message}`);
     }
 
-    // 入库
-    const entityData: Partial<KnowledgeBase> = {
-      name: dto.name || originalName,
-      description: dto.description || '',
-      fileName: originalName,
-      fileType: mimeType,
-      qdrantCollection: 'default_collection', // 后续可在 Agent 中动态生成
-    };
-
-    return this.knowledgeDao.create(entityData);
+    return this.knowledgeDao.findById(entity.id);
   }
 
   async findAll(
@@ -99,9 +122,6 @@ export class KnowledgeService {
     knowledgeBaseId: string,
     roleIds: string[],
   ): Promise<KnowledgeBase> {
-    // 根据当前数据库设计，knowledge_base_roles 为多对多关系。
-    // 但是 DAO 层中没有暴露 assignRoles 的方法，如果需要我们可以稍后在 DAO 中实现，或直接利用 TypeORM Repo
-    // 此处预留，因为知识库权限通常较复杂
-    throw new Error('未实现');
+    return this.knowledgeDao.assignRoles(knowledgeBaseId, roleIds);
   }
 }

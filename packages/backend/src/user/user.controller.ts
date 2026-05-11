@@ -8,7 +8,6 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -59,7 +58,7 @@ export class UserController {
     return this.userService.create(dto);
   }
 
-  @Put(':id')
+  @Post(':id')
   @RequirePermissions('user:update')
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.userService.update(id, dto);
@@ -71,7 +70,7 @@ export class UserController {
     return this.userService.remove(id);
   }
 
-  @Put(':id/roles')
+  @Post(':id/roles')
   @RequirePermissions('user:assign-role')
   assignRoles(@Param('id') id: string, @Body() dto: AssignUserRolesDto) {
     return this.userService.assignRoles(id, dto);

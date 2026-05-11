@@ -28,9 +28,9 @@ def search_knowledge(query: str, role_ids: list[str], limit: int = 5) -> list[di
         return []
 
     query_vector = embeddings.embed_query(query)
-    results = qdrant.search(
+    results = qdrant.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         limit=limit,
         query_filter=Filter(
             should=[
@@ -43,7 +43,7 @@ def search_knowledge(query: str, role_ids: list[str], limit: int = 5) -> list[di
             "text": str(point.payload.get("text", "")),
             "score": float(point.score),
         }
-        for point in results
+        for point in results.points
     ]
 
 
@@ -53,9 +53,9 @@ def search_call_transcripts(query: str, user_id: str, limit: int = 5) -> list[di
         return []
 
     query_vector = embeddings.embed_query(query)
-    results = qdrant.search(
+    results = qdrant.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         limit=limit,
         query_filter=Filter(
             must=[
@@ -70,5 +70,5 @@ def search_call_transcripts(query: str, user_id: str, limit: int = 5) -> list[di
             "score": float(point.score),
             "call_time": str(point.payload.get("call_time", "")),
         }
-        for point in results
+        for point in results.points
     ]

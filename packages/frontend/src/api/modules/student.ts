@@ -59,7 +59,7 @@ export async function updateStudent(
   studentId: string,
   payload: UpdateStudentBody,
 ): Promise<StudentListItem> {
-  const body = await request.put<unknown>(`/students/${studentId}`, payload)
+  const body = await request.post<unknown>(`/students/${studentId}`, payload)
   return unwrapApiData<StudentListItem>(body)
 }
 

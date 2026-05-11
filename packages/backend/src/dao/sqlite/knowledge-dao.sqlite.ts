@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { KnowledgeBase } from '../../knowledge/knowledge-base.entity';
+import { Role } from '../../role/role.entity';
 import {
   PaginatedResult,
   PaginationQuery,
@@ -25,6 +26,10 @@ export class KnowledgeDaoSqlite implements IKnowledgeDao {
   ): Promise<PaginatedResult<KnowledgeBase>> {
     const { page, pageSize, skip, keyword } = resolvePagination(query);
     const qb = this.repo.createQueryBuilder('k');
+
+    // 关联角色，以便前端回显
+    qb.leftJoinAndSelect('k.roles', 'roles');
+
     if (keyword) {
       qb.where(
         '(k.name LIKE :kw OR k.description LIKE :kw OR k.fileName LIKE :kw)',
@@ -61,5 +66,19 @@ export class KnowledgeDaoSqlite implements IKnowledgeDao {
 
   async delete(id: string): Promise<void> {
     await this.repo.delete({ id });
+  }
+
+  async assignRoles(id: string, roleIds: string[]): Promise<KnowledgeBase> {
+    const existing = await this.repo.findOne({
+      where: { id },
+      relations: ['roles'],
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`知识库不存在: ${id}`);
+    }
+
+    existing.roles = roleIds.map((roleId) => ({ id: roleId } as Role));
+    return this.repo.save(existing);
   }
 }

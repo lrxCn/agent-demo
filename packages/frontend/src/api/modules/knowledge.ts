@@ -69,6 +69,6 @@ export async function assignKnowledgeRoles(
   knowledgeId: string,
   roleIds: string[],
 ): Promise<KnowledgeListItem> {
-  const body = await request.put<unknown>(`/knowledge/${knowledgeId}/roles`, { roleIds })
+  const body = await request.post<unknown>(`/knowledge/${knowledgeId}/roles`, { roleIds })
   return unwrapApiData<KnowledgeListItem>(body)
 }

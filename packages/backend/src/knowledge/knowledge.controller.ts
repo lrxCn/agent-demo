@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Post,
   Query,
@@ -13,6 +14,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { KnowledgeService } from './knowledge.service';
 import { CreateKnowledgeDto } from './dto/create-knowledge.dto';
+import { AssignRolesDto } from './dto/assign-roles.dto';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -21,7 +23,16 @@ import { PermissionsGuard } from '../common/guards/permissions.guard';
 @Controller('knowledge')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class KnowledgeController {
+  private readonly logger = new Logger(KnowledgeController.name);
+
   constructor(private readonly knowledgeService: KnowledgeService) {}
+
+  @Post(':id/roles')
+  @RequirePermissions('knowledge:manage')
+  async assignRoles(@Param('id') id: string, @Body() dto: AssignRolesDto) {
+    this.logger.log(`分配角色: id=${id}, roles=${JSON.stringify(dto.roleIds)}`);
+    return this.knowledgeService.assignRoles(id, dto.roleIds);
+  }
 
   @Get()
   @RequirePermissions('knowledge:view')

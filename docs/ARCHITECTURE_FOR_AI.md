@@ -37,8 +37,8 @@
 - src/tools/frontend/schemas.py — 前端工具 schema：navigate_to_page、create_student、delete_student、query_students
 - src/memory/short_term.py — 获取 Redis checkpointer 实例
 - src/memory/long_term.py — Mem0 实例管理、search_memories()、save_memories()
-- src/rag/indexer.py — 文档切片 + Embedding + Qdrant 存储
-- src/rag/retriever.py — 向量检索，支持按 role_ids 过滤（知识库）和按 participant_ids 过滤（通话记录）
+- src/rag/indexer.py — 文档切片 + Embedding + Qdrant 存储。Payload 需包含 knowledge_base_id 和 role_ids（用于权限过滤）。
+- src/rag/retriever.py — 向量检索。知识库检索需传入用户 role_ids 并使用 MatchAny 过滤；通话记录检索按 participant_ids 过滤。
 - src/config/settings.py — 从 .env 读取所有配置
 
 图的执行流程：
@@ -125,12 +125,12 @@ Agent 通过结构化输出返回 tool_call → NestJS 通过 WebSocket 发送 t
 ## API 接口速查
 
 认证：POST /api/v1/auth/login, POST /api/v1/auth/refresh
-用户：GET/POST /api/v1/users, GET/PUT/DELETE /api/v1/users/:id, PUT /api/v1/users/:id/roles
-角色：GET/POST /api/v1/roles, PUT/DELETE /api/v1/roles/:id, PUT /api/v1/roles/:id/permissions
+用户：GET/POST /api/v1/users, GET/POST/DELETE /api/v1/users/:id, POST /api/v1/users/:id/roles
+角色：GET/POST /api/v1/roles, POST/DELETE /api/v1/roles/:id, POST /api/v1/roles/:id/permissions
 权限：GET /api/v1/permissions
-学生：GET/POST /api/v1/students, GET/PUT/DELETE /api/v1/students/:id, POST /api/v1/students/batch, DELETE /api/v1/students/batch
+学生：GET/POST /api/v1/students, GET/POST/DELETE /api/v1/students/:id, POST /api/v1/students/batch, DELETE /api/v1/students/batch
 AI对话：POST /api/v1/agent/chat (SSE)
-知识库：GET /api/v1/knowledge, POST /api/v1/knowledge/upload, DELETE /api/v1/knowledge/:id, PUT /api/v1/knowledge/:id/roles
+知识库：GET /api/v1/knowledge, POST /api/v1/knowledge/upload, DELETE /api/v1/knowledge/:id, POST /api/v1/knowledge/:id/roles
 语音转文字：POST /api/v1/agent/transcribe
 
 统一响应格式：{ code: 0, data: {}, message: "ok" }
