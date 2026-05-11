@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Message } from '@arco-design/web-vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useAuthStore } from '../../stores/auth'
-import { useWebRTC } from '../../composables/useWebRTC'
+import { Message } from "@arco-design/web-vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useAuthStore } from "../../stores/auth";
+import { useWebRTC } from "../../composables/useWebRTC";
 
-const auth = useAuthStore()
+const auth = useAuthStore();
 const {
   incomingCall,
   onlineUserIds,
@@ -26,86 +26,86 @@ const {
   reject,
   hangup,
   sendAudioFile,
-} = useWebRTC()
+} = useWebRTC();
 
-const remoteAudioRef = ref<HTMLAudioElement | null>(null)
-const ticker = ref(0)
+const remoteAudioRef = ref<HTMLAudioElement | null>(null);
+const ticker = ref(0);
 const onlineTargets = computed(() =>
   onlineUserIds.value.map((id) => ({
     id,
     label: id === auth.user?.id ? `${id}（我）` : id,
   })),
-)
+);
 
 const durationLabel = computed(() => {
-  void ticker.value
-  const total = callDurationSec.value
-  const mm = String(Math.floor(total / 60)).padStart(2, '0')
-  const ss = String(total % 60).padStart(2, '0')
-  return `${mm}:${ss}`
-})
+  void ticker.value;
+  const total = callDurationSec.value;
+  const mm = String(Math.floor(total / 60)).padStart(2, "0");
+  const ss = String(total % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+});
 
-let timer: number | null = null
+let timer: number | null = null;
 
 onMounted(() => {
   timer = window.setInterval(() => {
-    ticker.value += 1
-  }, 1000)
-})
+    ticker.value += 1;
+  }, 1000);
+});
 
 onUnmounted(() => {
   if (timer) {
-    window.clearInterval(timer)
-    timer = null
+    window.clearInterval(timer);
+    timer = null;
   }
-})
+});
 
 watch(
   () => remoteStream.value,
   (stream) => {
     if (remoteAudioRef.value) {
-      remoteAudioRef.value.srcObject = stream ?? null
-      void remoteAudioRef.value.play().catch(() => {})
+      remoteAudioRef.value.srcObject = stream ?? null;
+      void remoteAudioRef.value.play().catch(() => {});
     }
   },
-)
+);
 
 watch(
   () => recordedBlob.value,
   (blob) => {
     if (blob && blob.size > 0) {
-      Message.success('通话录音已生成')
+      Message.success("通话录音已生成");
     }
   },
-)
+);
 
 function handleCall(userId: string) {
-  void call(userId)
+  void call(userId);
 }
 
 function handleAnswer() {
-  answer()
+  answer();
 }
 
 function handleReject() {
-  reject()
+  reject();
 }
 
 function handleHangup() {
-  void hangup()
+  void hangup();
 }
 
 function handlePickAudioFile(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) {
-    return
+    return;
   }
   void sendAudioFile(file).catch((err) => {
-    const msg = err instanceof Error ? err.message : '发送音频文件失败'
-    Message.error(msg)
-  })
-  input.value = ''
+    const msg = err instanceof Error ? err.message : "发送音频文件失败";
+    Message.error(msg);
+  });
+  input.value = "";
 }
 </script>
 
@@ -114,7 +114,9 @@ function handlePickAudioFile(event: Event) {
     <a-space direction="vertical" size="large" fill>
       <a-card title="在线用户">
         <template #extra>
-          <a-button type="outline" size="small" @click="refreshOnlineUsers">刷新</a-button>
+          <a-button type="outline" size="small" @click="refreshOnlineUsers"
+            >刷新</a-button
+          >
         </template>
         <a-list :data="onlineTargets" :max-height="280" bordered>
           <template #item="{ item }">
@@ -153,15 +155,22 @@ function handlePickAudioFile(event: Event) {
           <div v-else>
             <a-tag>空闲</a-tag>
           </div>
-          <a-button type="outline" status="danger" :disabled="!activeUserId" @click="handleHangup">挂断</a-button>
+          <a-button
+            type="outline"
+            status="danger"
+            :disabled="!activeUserId"
+            @click="handleHangup"
+            >挂断</a-button
+          >
           <a-tag v-if="isTranscribing" color="gold">录音转写中...</a-tag>
           <a-alert
             v-if="transcribedText"
             type="info"
             show-icon
             title="最近一次转写结果"
-            :content="transcribedText"
-          />
+          >
+            {{ transcribedText }}
+          </a-alert>
         </a-space>
       </a-card>
 
@@ -180,7 +189,9 @@ function handlePickAudioFile(event: Event) {
             :show-text="true"
             status="normal"
           />
-          <div v-if="isSendingAudioFile" class="hint-text">正在发送：{{ sendingFileName }}</div>
+          <div v-if="isSendingAudioFile" class="hint-text">
+            正在发送：{{ sendingFileName }}
+          </div>
           <a-progress
             v-if="receivingProgress > 0 && receivingProgress < 100"
             :percent="receivingProgress"
@@ -191,7 +202,10 @@ function handlePickAudioFile(event: Event) {
       </a-card>
 
       <a-card title="接收到的音频">
-        <a-empty v-if="receivedAudioFiles.length === 0" description="暂无接收文件" />
+        <a-empty
+          v-if="receivedAudioFiles.length === 0"
+          description="暂无接收文件"
+        />
         <a-list v-else :data="receivedAudioFiles" bordered>
           <template #item="{ item }">
             <a-list-item>
@@ -199,7 +213,9 @@ function handlePickAudioFile(event: Event) {
                 <div>
                   <a-tag color="green">已接收</a-tag>
                   <span class="status-text">{{ item.name }}</span>
-                  <span class="status-text">{{ Math.ceil(item.size / 1024) }} KB</span>
+                  <span class="status-text"
+                    >{{ Math.ceil(item.size / 1024) }} KB</span
+                  >
                 </div>
                 <audio :src="item.objectUrl" controls preload="metadata" />
               </a-space>

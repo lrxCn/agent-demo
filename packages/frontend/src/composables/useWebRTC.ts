@@ -7,6 +7,7 @@ import { getWebSocketClient, getWebSocketStatus } from './useWebSocket'
 
 interface IncomingCallInfo {
   callerUserId: string
+  callId: string
 }
 
 interface AudioFileMeta {
@@ -80,6 +81,7 @@ export function useWebRTC() {
   const recordedBlob = ref<Blob | null>(null)
   const isTranscribing = ref(false)
   const transcribedText = ref('')
+  const currentCallId = ref<string | null>(null)
   const onlineUserIds = ref<string[]>([])
   const isSendingAudioFile = ref(false)
   const sendingProgress = ref(0)
@@ -92,6 +94,8 @@ export function useWebRTC() {
     startedAt.value ? Math.floor((Date.now() - startedAt.value) / 1000) : 0,
   )
 
+  function ensureSocket(silent: true): ReturnType<typeof getWebSocketClient> | null
+  function ensureSocket(silent?: false): NonNullable<ReturnType<typeof getWebSocketClient>>
   function ensureSocket(silent = false) {
     const socket = getWebSocketClient()
     if (!socket || !socket.connected) {
@@ -255,11 +259,11 @@ export function useWebRTC() {
     socket.off('rtc:answered')
     socket.off('rtc:rejected')
     socket.off('rtc:hangup')
-    socket.on('rtc:incoming', (payload: { callerUserId?: string }) => {
-      if (!payload?.callerUserId) {
+    socket.on('rtc:incoming', (payload: { callerUserId?: string; callId?: string }) => {
+      if (!payload?.callerUserId || !payload?.callId) {
         return
       }
-      incomingCall.value = { callerUserId: payload.callerUserId }
+      incomingCall.value = { callerUserId: payload.callerUserId, callId: payload.callId }
     })
     socket.on('rtc:answered', ({ userId }: { userId?: string }) => {
       if (!callingUserId.value || !userId || userId !== callingUserId.value) {
@@ -301,12 +305,13 @@ export function useWebRTC() {
     const socket = ensureSocket()
     ensurePeer()
     await getLocalAudioStream()
-    socket.emit('rtc:call', { targetUserId }, (resp: { ok?: boolean; message?: string }) => {
+    socket.emit('rtc:call', { targetUserId }, (resp: { ok?: boolean; message?: string; callId?: string }) => {
       if (resp && resp.ok === false) {
         Message.error(resp.message || '呼叫失败')
         return
       }
       callingUserId.value = targetUserId
+      currentCallId.value = resp.callId || null
       Message.info('正在呼叫对方...')
     })
   }
@@ -327,9 +332,10 @@ export function useWebRTC() {
       return
     }
     const socket = ensureSocket()
-    const callerId = incomingCall.value.callerUserId
-    pendingCallerId.value = callerId
-    socket.emit('rtc:answer', { targetUserId: callerId })
+    const { callerUserId, callId } = incomingCall.value
+    currentCallId.value = callId
+    pendingCallerId.value = callerUserId
+    socket.emit('rtc:answer', { targetUserId: callerUserId })
   }
 
   function reject() {
@@ -401,6 +407,7 @@ export function useWebRTC() {
         'call-record.webm',
         auth.user?.id,
         activeUserId.value || undefined,
+        currentCallId.value || undefined,
       )
       transcribedText.value = text
       Message.success('录音转写完成')
@@ -423,6 +430,7 @@ export function useWebRTC() {
     remoteStream.value = null
     activeUserId.value = null
     callingUserId.value = null
+    currentCallId.value = null
     startedAt.value = null
     isSendingAudioFile.value = false
     sendingProgress.value = 0

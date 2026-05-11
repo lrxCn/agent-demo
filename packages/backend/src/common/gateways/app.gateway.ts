@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -148,7 +149,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleRtcCall(
     @ConnectedSocket() client: Socket,
     @MessageBody() body: unknown,
-  ): { ok: true } | { ok: false; message: string } {
+  ): { ok: true; callId: string } | { ok: false; message: string } {
     const userId = getSocketData(client).userId;
     if (!userId) {
       return { ok: false, message: '未认证' };
@@ -161,8 +162,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!target) {
       return { ok: false, message: '目标用户不在线' };
     }
-    target.emit('rtc:incoming', { callerUserId: userId });
-    return { ok: true };
+    const callId = randomUUID();
+    target.emit('rtc:incoming', { callerUserId: userId, callId });
+    return { ok: true, callId };
   }
 
   @SubscribeMessage('rtc:answer')

@@ -63,15 +63,24 @@ export class AgentController {
     }
   }
 
+  private processedCallIds = new Set<string>();
+
   @Post('transcribe')
   @UseInterceptors(FileInterceptor('file'))
   async transcribe(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { callerUserId?: string; calleeUserId?: string },
+    @Body()
+    body: { callerUserId?: string; calleeUserId?: string; callId?: string },
   ) {
+    if (body.callId && this.processedCallIds.has(body.callId)) {
+      this.logger.log(`检测到重复 Call ID: ${body.callId}，跳过处理。`);
+      return { text: '[通话记录已由对端处理]' };
+    }
+
     if (!file || !file.buffer || file.size <= 0) {
       return { code: 1, data: null, message: '请上传有效的录音文件' };
     }
+
     const text = await this.sttService.transcribe(
       file.buffer,
       file.originalname || 'call-record.webm',
@@ -90,15 +99,23 @@ export class AgentController {
           }),
         });
         if (!response.ok) {
-          this.logger.warn(`Agent 通话记录入库返回状态异常: ${response.status}`);
+          this.logger.warn(
+            `Agent 通话记录入库返回状态异常: ${response.status}`,
+          );
         } else {
-          this.logger.log(`成功推送给 Agent 记录通话记录: ${body.callerUserId} - ${body.calleeUserId}`);
+          this.logger.log(
+            `成功推送给 Agent 记录通话记录: ${body.callerUserId} - ${body.calleeUserId}`,
+          );
         }
       } catch (e) {
         this.logger.warn(`向 Agent 发送通话记录失败: ${(e as Error).message}`);
       }
     }
 
-    return { code: 0, data: { text }, message: 'ok' };
+    if (body.callId) {
+      this.processedCallIds.add(body.callId);
+    }
+
+    return { text };
   }
 }
