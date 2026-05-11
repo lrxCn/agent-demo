@@ -6,7 +6,14 @@ from typing import Any
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+    VectorParams,
+)
 
 from src.config.settings import (
     EMBEDDING_MODEL,
@@ -122,3 +129,32 @@ def index_call_transcript(
 
     qdrant.upsert(collection_name=COLLECTION_NAME, points=points)
     return len(points)
+
+
+def update_document_roles(knowledge_base_id: str, role_ids: list[str]) -> None:
+    """批量更新 Qdrant 中特定文档的权限角色。"""
+    qdrant.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"role_ids": role_ids},
+        points=Filter(
+            must=[
+                FieldCondition(
+                    key="knowledge_base_id", match=MatchValue(value=knowledge_base_id)
+                ),
+            ]
+        ),
+    )
+
+
+def delete_document(knowledge_base_id: str) -> None:
+    """按 knowledge_base_id 从 Qdrant 中物理删除文档的所有 chunks。"""
+    qdrant.delete(
+        collection_name=COLLECTION_NAME,
+        points_selector=Filter(
+            must=[
+                FieldCondition(
+                    key="knowledge_base_id", match=MatchValue(value=knowledge_base_id)
+                ),
+            ]
+        ),
+    )

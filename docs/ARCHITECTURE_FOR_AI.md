@@ -37,7 +37,7 @@
 - src/tools/frontend/schemas.py — 前端工具 schema：navigate_to_page、create_student、delete_student、query_students
 - src/memory/short_term.py — 获取 Redis checkpointer 实例
 - src/memory/long_term.py — Mem0 实例管理、search_memories()、save_memories()
-- src/rag/indexer.py — 文档切片 + Embedding + Qdrant 存储。Payload 需包含 knowledge_base_id 和 role_ids（用于权限过滤）。
+- src/rag/indexer.py — 文档切片 + Embedding + Qdrant 存储。支持按 knowledge_base_id 进行权限批量更新和物理删除同步。
 - src/rag/retriever.py — 向量检索。知识库检索需传入用户 role_ids 并使用 MatchAny 过滤；通话记录检索按 participant_ids 过滤。
 - src/config/settings.py — 从 .env 读取所有配置
 
@@ -58,7 +58,7 @@ chat_node 中，先从 registry 获取所有 builtin 工具，再根据 state �
 - src/permission/ — 权限列表查询。预置权限按分组：用户管理(user:*)、角色管理(role:*)、学生管理(student:*)、知识库(knowledge:*)。与 Role 多对多关系（role_permissions 表）。
 - src/student/ — 学生 CRUD + 批量操作。字段：id, name, student_no, gender, class_name, phone, email, created_at, updated_at。
 - src/agent/ — Agent 代理层。使用 HttpService 转发请求到 LangGraph API（地址由环境变量 LANGGRAPH_API_URL 指定）。SSE 流式转发对话响应。
-- src/knowledge/ — 知识库管理。文件上传（txt/md/pdf）、文本提取、调用 Agent 做向量化。
+- src/knowledge/ — 知识库管理。文件上传、文本提取、调用 Agent 接口执行向量化入库、权限同步及物理删除同步。
 - src/rtc/ — WebRTC 信令（在 WebSocket Gateway 中实现）。
 - src/dao/ — 数据访问抽象层。interfaces/ 定义接口（IUserDao, IRoleDao 等），sqlite/ 提供 TypeORM 实现。dao.module.ts 通过 provide token 绑定实现类，切换数据库只需修改 useClass。
 - src/common/guards/ — JwtAuthGuard、RolesGuard、PermissionsGuard。

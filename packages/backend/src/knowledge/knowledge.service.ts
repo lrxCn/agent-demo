@@ -116,12 +116,56 @@ export class KnowledgeService {
 
   async remove(id: string): Promise<void> {
     await this.knowledgeDao.delete(id);
+
+    // 同步删除 Agent 中的向量数据
+    try {
+      const response = await fetch('http://127.0.0.1:8123/knowledge/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          knowledge_base_id: id,
+        }),
+      });
+
+      if (!response.ok) {
+        this.logger.warn(`同步删除 Agent 向量数据失败: ${response.status}`);
+      } else {
+        this.logger.log(`成功同步删除 Agent 向量数据: ${id}`);
+      }
+    } catch (e) {
+      this.logger.warn(`同步删除 Agent 向量数据出错: ${(e as Error).message}`);
+    }
   }
 
   async assignRoles(
     knowledgeBaseId: string,
     roleIds: string[],
   ): Promise<KnowledgeBase> {
-    return this.knowledgeDao.assignRoles(knowledgeBaseId, roleIds);
+    const result = await this.knowledgeDao.assignRoles(knowledgeBaseId, roleIds);
+
+    // 同步给 Agent
+    try {
+      const response = await fetch(
+        'http://127.0.0.1:8123/knowledge/update-roles',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            knowledge_base_id: knowledgeBaseId,
+            role_ids: roleIds,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        this.logger.warn(`同步权限给 Agent 失败: ${response.status}`);
+      } else {
+        this.logger.log(`成功同步权限给 Agent: ${knowledgeBaseId}`);
+      }
+    } catch (e) {
+      this.logger.warn(`同步权限给 Agent 出错: ${(e as Error).message}`);
+    }
+
+    return result;
   }
 }

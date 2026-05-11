@@ -5,7 +5,12 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from src.rag.indexer import index_call_transcript, index_document
+from src.rag.indexer import (
+    delete_document,
+    index_call_transcript,
+    index_document,
+    update_document_roles,
+)
 
 app = FastAPI()
 
@@ -36,6 +41,39 @@ def ingest_knowledge(payload: IngestKnowledgeRequest) -> dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"索引失败: {exc}") from exc
     return {"ok": True, "chunks": chunk_count}
+
+
+class UpdateRolesRequest(BaseModel):
+    """更新权限请求体。"""
+
+    knowledge_base_id: str
+    role_ids: list[str]
+
+
+@app.post("/knowledge/update-roles")
+def update_roles(payload: UpdateRolesRequest) -> dict[str, Any]:
+    """同步更新 Qdrant 中的权限信息。"""
+    try:
+        update_document_roles(payload.knowledge_base_id, payload.role_ids)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"同步权限失败: {exc}") from exc
+    return {"ok": True}
+
+
+class DeleteKnowledgeRequest(BaseModel):
+    """删除知识库请求体。"""
+
+    knowledge_base_id: str
+
+
+@app.post("/knowledge/delete")
+def delete_knowledge(payload: DeleteKnowledgeRequest) -> dict[str, Any]:
+    """同步删除 Qdrant 中的文档。"""
+    try:
+        delete_document(payload.knowledge_base_id)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"删除知识库失败: {exc}") from exc
+    return {"ok": True}
 
 
 class IngestCallRequest(BaseModel):
