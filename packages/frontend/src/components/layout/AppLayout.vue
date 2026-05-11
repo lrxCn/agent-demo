@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { IconDesktop, IconMoon, IconSun } from '@arco-design/web-vue/es/icon'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChatBubble from '../chat/ChatBubble.vue'
+import { useAppStore } from '../../stores/app'
 import { useAuthStore } from '../../stores/auth'
 import { usePermissionStore } from '../../stores/permission'
 import { useAppDisplayName } from '../../composables'
@@ -13,6 +15,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const permission = usePermissionStore()
+const appStore = useAppStore()
 
 // 全局 WebSocket 连接（tool:invoke 监听）
 useWebSocket()
@@ -45,6 +48,13 @@ async function handleLogout(): Promise<void> {
 const displayName = computed(() => auth.user?.nickname || auth.user?.username || '用户')
 
 const appDisplayName = useAppDisplayName()
+
+const themeTriggerIcon = computed(() => {
+  if (appStore.themeMode === 'auto') {
+    return IconDesktop
+  }
+  return appStore.resolvedTheme === 'dark' ? IconMoon : IconSun
+})
 </script>
 
 <template>
@@ -72,6 +82,27 @@ const appDisplayName = useAppDisplayName()
             </a-breadcrumb-item>
           </a-breadcrumb>
           <div class="header-actions">
+            <a-dropdown trigger="click" position="br">
+              <a-button type="text" class="theme-trigger" aria-label="主题">
+                <template #icon>
+                  <component :is="themeTriggerIcon" />
+                </template>
+              </a-button>
+              <template #content>
+                <a-doption @click="appStore.setThemeMode('auto')">
+                  <template #icon><IconDesktop /></template>
+                  跟随系统
+                </a-doption>
+                <a-doption @click="appStore.setThemeMode('light')">
+                  <template #icon><IconSun /></template>
+                  明亮模式
+                </a-doption>
+                <a-doption @click="appStore.setThemeMode('dark')">
+                  <template #icon><IconMoon /></template>
+                  黑暗模式
+                </a-doption>
+              </template>
+            </a-dropdown>
             <a-dropdown trigger="click">
               <a-button type="text" class="user-trigger">
                 {{ displayName }}
@@ -151,8 +182,14 @@ const appDisplayName = useAppDisplayName()
   gap: 8px;
 }
 
+.theme-trigger,
 .user-trigger {
   color: var(--color-text-1, #e2e8f0);
+}
+
+body:not([arco-theme='dark']) .theme-trigger,
+body:not([arco-theme='dark']) .user-trigger {
+  color: var(--color-text-1, #1d2129);
 }
 
 .app-main {

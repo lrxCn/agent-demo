@@ -1,14 +1,21 @@
 /**
- * Arco 深色壳层 + 蓝紫主色（与 Arco token 并存，便于后续统一 token）
+ * 蓝紫主色（明暗两套壳层均可用）
  */
 body {
   --primary-color: #6366f1;
   --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  background-color: #0f0f23;
-  color: #e2e8f0;
 }
 
+/** 明亮模式（无 arco-theme 或显式浅色壳层） */
+body:not([arco-theme='dark']) {
+  background-color: #f2f3f5;
+  color: #1d2129;
+}
+
+/** 黑暗模式 */
 body[arco-theme='dark'] {
+  background-color: #0f0f23;
+  color: #e2e8f0;
   /* Arco 主色链使用 RGB 三元组 */
   --primary-6: 99, 102, 241;
   --primary-5: 129, 131, 248;

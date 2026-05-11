@@ -1,13 +1,11 @@
 import { createApp } from 'vue'
-import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+import { installStores } from './stores'
 import './style.css'
 import './styles/theme.css'
 
-document.body.setAttribute('arco-theme', 'dark')
-
 const app = createApp(App)
-app.use(createPinia())
+installStores(app)
 app.use(router)
 app.mount('#app')
