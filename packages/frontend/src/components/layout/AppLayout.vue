@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ChatBubble from '../chat/ChatBubble.vue'
 import { useAuthStore } from '../../stores/auth'
 import { usePermissionStore } from '../../stores/permission'
+import { useAppDisplayName } from '../../composables'
 import { useWebSocket } from '../../composables/useWebSocket'
 import { useToolRegistry } from '../../composables/useToolRegistry'
 
@@ -42,6 +43,8 @@ async function handleLogout(): Promise<void> {
 }
 
 const displayName = computed(() => auth.user?.nickname || auth.user?.username || '用户')
+
+const appDisplayName = useAppDisplayName()
 </script>
 
 <template>
@@ -49,7 +52,7 @@ const displayName = computed(() => auth.user?.nickname || auth.user?.username ||
     <a-layout class="app-shell">
       <a-layout-sider v-model:collapsed="collapsed" collapsible :width="220" breakpoint="lg" class="app-sider">
         <div class="logo-wrap">
-          <span class="logo-text">Plan2Code</span>
+          <span class="logo-text">{{ appDisplayName }}</span>
         </div>
         <a-menu :selected-keys="selectedKeys" auto-open-selected @menu-item-click="onMenuItemClick">
           <a-menu-item v-for="item in permission.visibleMenuItems" :key="item.path">

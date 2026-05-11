@@ -3,11 +3,14 @@ import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { FormInstance } from '@arco-design/web-vue'
 import { Message } from '@arco-design/web-vue'
+import { useAppDisplayName } from '../../composables'
 import { useAuthStore } from '../../stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+
+const appDisplayName = useAppDisplayName()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
@@ -41,7 +44,7 @@ async function onSubmit(): Promise<void> {
     <div class="login-glow login-glow--b" aria-hidden="true" />
     <a-card class="login-card" :bordered="false">
       <template #title>
-        <span class="login-title">Plan2Code</span>
+        <span class="login-title">{{ appDisplayName }}</span>
       </template>
       <p class="login-subtitle">使用账号登录以继续</p>
       <a-form ref="formRef" :model="form" layout="vertical" class="login-form">

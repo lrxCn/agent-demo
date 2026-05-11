@@ -1,3 +1,4 @@
+export { useAppDisplayName } from './useAppDisplayName'
 export { useChat } from './useChat'
 export { useWebSocket } from './useWebSocket'
 export { useWebRTC } from './useWebRTC'
