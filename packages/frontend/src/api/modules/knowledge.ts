@@ -72,3 +72,30 @@ export async function assignKnowledgeRoles(
   const body = await request.post<unknown>(`/knowledge/${knowledgeId}/roles`, { roleIds })
   return unwrapApiData<KnowledgeListItem>(body)
 }
+
+export async function updateKnowledge(
+  knowledgeId: string,
+  payload: { name?: string; file: File },
+  onProgress?: (percent: number) => void,
+): Promise<KnowledgeListItem> {
+  const form = new FormData()
+  if (payload.name) {
+    form.append('name', payload.name)
+  }
+  form.append('file', payload.file)
+  const body = await request.post<unknown>(`/knowledge/${knowledgeId}/update`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (event) => {
+      if (!onProgress) {
+        return
+      }
+      const total = event.total ?? 0
+      if (total <= 0) {
+        onProgress(0)
+        return
+      }
+      onProgress(Math.min(100, Math.round((event.loaded * 100) / total)))
+    },
+  })
+  return unwrapApiData<KnowledgeListItem>(body)
+}

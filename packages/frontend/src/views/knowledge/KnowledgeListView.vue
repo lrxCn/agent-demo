@@ -8,6 +8,7 @@ import {
   deleteKnowledge,
   fetchKnowledgePage,
   uploadKnowledge,
+  updateKnowledge,
   type KnowledgeListItem,
 } from '../../api/modules/knowledge'
 import { fetchRolesPage, type RoleListItem } from '../../api/modules/role'
@@ -137,12 +138,24 @@ const uploadName = ref('')
 const uploadFile = ref<File | null>(null)
 const uploadSubmitting = ref(false)
 const uploadProgress = ref(0)
+const editingId = ref<string | null>(null)
+const isEdit = computed(() => !!editingId.value)
 
 function openUpload(): void {
   uploadName.value = ''
   uploadFile.value = null
   uploadSubmitting.value = false
   uploadProgress.value = 0
+  editingId.value = null
+  uploadVisible.value = true
+}
+
+function openEdit(record: KnowledgeListItem): void {
+  uploadName.value = record.name
+  uploadFile.value = null
+  uploadSubmitting.value = false
+  uploadProgress.value = 0
+  editingId.value = record.id
   uploadVisible.value = true
 }
 
@@ -179,17 +192,30 @@ async function submitUpload(): Promise<void> {
   uploadSubmitting.value = true
   uploadProgress.value = 0
   try {
-    await uploadKnowledge(
-      {
-        name,
-        file: uploadFile.value,
-      },
-      (percent) => {
-        uploadProgress.value = percent
-      },
-    )
+    if (editingId.value) {
+      await updateKnowledge(
+        editingId.value,
+        {
+          name: name !== tableData.value.find((i) => i.id === editingId.value)?.name ? name : undefined,
+          file: uploadFile.value,
+        },
+        (percent) => {
+          uploadProgress.value = percent
+        },
+      )
+    } else {
+      await uploadKnowledge(
+        {
+          name,
+          file: uploadFile.value,
+        },
+        (percent) => {
+          uploadProgress.value = percent
+        },
+      )
+    }
     uploadProgress.value = 100
-    Message.success('上传成功')
+    Message.success(editingId.value ? '更新成功' : '上传成功')
     uploadVisible.value = false
     await loadTable()
   } catch (e) {
@@ -281,7 +307,11 @@ async function submitRoleAssign(): Promise<void> {
             @search="onSearch"
             @press-enter="onSearch"
           />
-          <a-button v-if="hasPermission('knowledge:create')" type="primary" @click="openUpload">
+          <a-button
+            v-if="hasPermission('knowledge:create')"
+            type="primary"
+            @click="openUpload"
+          >
             上传文件
           </a-button>
         </a-space>
@@ -297,6 +327,14 @@ async function submitRoleAssign(): Promise<void> {
         >
           <template #actions="{ record }">
             <a-space>
+              <a-button
+                v-if="hasPermission('knowledge:manage')"
+                type="text"
+                size="small"
+                @click="openEdit(record as KnowledgeListItem)"
+              >
+                编辑
+              </a-button>
               <a-button
                 v-if="hasPermission('knowledge:manage')"
                 type="text"
@@ -320,14 +358,21 @@ async function submitRoleAssign(): Promise<void> {
       </a-space>
     </a-card>
 
-    <a-modal v-model:visible="uploadVisible" title="上传知识库文件" :mask-closable="false" :footer="false">
+    <a-modal
+      v-model:visible="uploadVisible"
+      :title="isEdit ? '更新知识库文件' : '上传知识库文件'"
+      :mask-closable="false"
+      :footer="false"
+    >
       <a-form :model="{ uploadName }" layout="vertical">
         <a-form-item label="知识库名称" required>
           <a-input v-model="uploadName" allow-clear placeholder="请输入名称" />
         </a-form-item>
-        <a-form-item label="文件" required>
+        <a-form-item :label="isEdit ? '新文件' : '文件'" :required="!isEdit">
           <input accept=".txt,.md,.pdf" type="file" @change="onFileChange" />
-          <div class="file-hint">支持 .txt / .md / .pdf</div>
+          <div class="file-hint">
+            支持 .txt / .md / .pdf{{ isEdit ? "（不选择则只修改名称）" : "" }}
+          </div>
         </a-form-item>
       </a-form>
 
@@ -339,25 +384,47 @@ async function submitRoleAssign(): Promise<void> {
       />
 
       <div class="modal-footer-btns">
-        <a-button :disabled="uploadSubmitting" @click="uploadVisible = false">取消</a-button>
-        <a-button type="primary" :loading="uploadSubmitting" @click="submitUpload">上传</a-button>
+        <a-button :disabled="uploadSubmitting" @click="uploadVisible = false"
+          >取消</a-button
+        >
+        <a-button
+          type="primary"
+          :loading="uploadSubmitting"
+          @click="submitUpload"
+          >{{ isEdit ? "更新" : "上传" }}</a-button
+        >
       </div>
     </a-modal>
 
     <a-modal
       v-model:visible="roleVisible"
-      :title="assigningKnowledge ? `设置角色权限：${assigningKnowledge.name}` : '设置角色权限'"
+      :title="
+        assigningKnowledge
+          ? `设置角色权限：${assigningKnowledge.name}`
+          : '设置角色权限'
+      "
       width="560px"
       :mask-closable="false"
       :footer="false"
     >
       <a-spin :loading="roleLoading" style="width: 100%">
-        <a-checkbox-group v-model="selectedRoleIds" direction="vertical" :options="roleOptions" />
+        <a-checkbox-group
+          v-model="selectedRoleIds"
+          direction="vertical"
+          :options="roleOptions"
+        />
       </a-spin>
 
       <div class="modal-footer-btns">
-        <a-button :disabled="roleSubmitting" @click="roleVisible = false">取消</a-button>
-        <a-button type="primary" :loading="roleSubmitting" @click="submitRoleAssign">确定</a-button>
+        <a-button :disabled="roleSubmitting" @click="roleVisible = false"
+          >取消</a-button
+        >
+        <a-button
+          type="primary"
+          :loading="roleSubmitting"
+          @click="submitRoleAssign"
+          >确定</a-button
+        >
       </div>
     </a-modal>
   </a-space>

@@ -50,6 +50,17 @@ export class KnowledgeController {
     return this.knowledgeService.uploadFile(file, dto);
   }
 
+  @Post(':id/update')
+  @RequirePermissions('knowledge:manage')
+  @UseInterceptors(FileInterceptor('file'))
+  async update(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: CreateKnowledgeDto,
+  ) {
+    return this.knowledgeService.updateFile(id, file, dto);
+  }
+
   @Delete(':id')
   @RequirePermissions('knowledge:delete')
   async remove(@Param('id') id: string) {

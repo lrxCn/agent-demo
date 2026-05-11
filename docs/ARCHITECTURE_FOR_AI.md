@@ -130,8 +130,28 @@ Agent 通过结构化输出返回 tool_call → NestJS 通过 WebSocket 发送 t
 权限：GET /api/v1/permissions
 学生：GET/POST /api/v1/students, GET/POST/DELETE /api/v1/students/:id, POST /api/v1/students/batch, DELETE /api/v1/students/batch
 AI对话：POST /api/v1/agent/chat (SSE)
-知识库：GET /api/v1/knowledge, POST /api/v1/knowledge/upload, DELETE /api/v1/knowledge/:id, POST /api/v1/knowledge/:id/roles
+知识库：
+| 接口路径 | 描述 |
+| :--- | :--- |
+| `POST /api/v1/knowledge/upload` | 知识库文件上传 & 初始向量化 |
+| `POST /api/v1/knowledge/:id/update` | 知识库文件更新 & 重新向量化 |
+| `POST /api/v1/knowledge/:id/roles` | 修改知识库权限 (同步 Qdrant Payload) |
+| `DELETE /api/v1/knowledge/:id` | 删除知识库 (同步 Qdrant 物理删除) |
 语音转文字：POST /api/v1/agent/transcribe
+
+## RAG 权限过滤与同步逻辑
+
+### 权限过滤原则
+- **存储**：向量数据在 Qdrant 中存储时，Payload 必须包含 `role_ids` 字段（数组类型）。
+- **检索**：Agent 在执行 `retriever` 搜索时，必须从 Context 或 Header 中获取当前用户的 `role_ids`，并在 Qdrant 查询中使用 `MatchAny` 过滤器。
+
+### 数据同步触发点
+1. **上传 (Create)**：Backend 存入 DB -> 提取文本 -> 调用 Agent `/knowledge/ingest` (带上 `knowledge_base_id` 和初始权限)。
+2. **更新内容 (Update Content)**：用户替换文件 -> Backend 提取新文本 -> 调用 Agent `/knowledge/update` -> Agent 执行 **物理删除旧 ID 分片 + 重新切片入库** (保持 `role_ids` 不变)。
+3. **修改权限 (Update Roles)**：用户在 UI 修改角色 -> Backend 更新关联表 -> 调用 Agent `/knowledge/update-roles` -> Agent 通过 `set_payload` 批量更新该 `knowledge_base_id` 下所有点的 `role_ids`。
+4. **物理删除 (Delete)**：用户删除记录 -> Backend 删除 DB 记录 -> 调用 Agent `/knowledge/delete` -> Agent 物理清理 Qdrant 数据。
+
+## 响应规范
 
 统一响应格式：{ code: 0, data: {}, message: "ok" }
 分页响应格式：{ code: 0, data: { items: [], total: number, page: number, pageSize: number } }

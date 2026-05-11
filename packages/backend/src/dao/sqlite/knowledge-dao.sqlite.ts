@@ -18,7 +18,7 @@ export class KnowledgeDaoSqlite implements IKnowledgeDao {
   ) {}
 
   async findById(id: string): Promise<KnowledgeBase | null> {
-    return this.repo.findOne({ where: { id } });
+    return this.repo.findOne({ where: { id }, relations: ['roles'] });
   }
 
   async findAll(

@@ -9,6 +9,7 @@ from src.rag.indexer import (
     delete_document,
     index_call_transcript,
     index_document,
+    reindex_document,
     update_document_roles,
 )
 
@@ -48,6 +49,24 @@ class UpdateRolesRequest(BaseModel):
 
     knowledge_base_id: str
     role_ids: list[str]
+
+
+@app.post("/knowledge/update")
+def update_knowledge(payload: IngestKnowledgeRequest) -> dict[str, Any]:
+    """更新文档内容：重新切片并保持 ID 和权限一致。"""
+    merged_metadata = {
+        **payload.metadata,
+        "filename": payload.filename,
+        "knowledge_base_id": payload.knowledge_base_id,
+        "role_ids": payload.role_ids,
+    }
+    try:
+        chunk_count = reindex_document(payload.text, merged_metadata)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"更新索引失败: {exc}") from exc
+    return {"ok": True, "chunks": chunk_count}
 
 
 @app.post("/knowledge/update-roles")

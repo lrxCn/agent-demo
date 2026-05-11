@@ -10,6 +10,7 @@ from qdrant_client.models import (
     Distance,
     FieldCondition,
     Filter,
+    FilterSelector,
     MatchValue,
     PointStruct,
     VectorParams,
@@ -32,6 +33,7 @@ embeddings = OpenAIEmbeddings(
     model=EMBEDDING_MODEL,
     api_key=OPENAI_API_KEY,
     base_url=OPENAI_BASE_URL,
+    chunk_size=20,
 )
 qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
@@ -49,7 +51,7 @@ def ensure_collection() -> None:
 
 
 def index_document(text: str, metadata: dict[str, Any]) -> int:
-    """将文档切片并向量化后写入 Qdrant，返回写入块数。"""
+    """对文档进行切片、向量化并存入 Qdrant。"""
     normalized_text = text.strip()
     if not normalized_text:
         raise ValueError("文档内容为空，无法建立索引")
@@ -65,8 +67,9 @@ def index_document(text: str, metadata: dict[str, Any]) -> int:
         raise ValueError("文档切片结果为空，无法建立索引")
 
     vectors = embeddings.embed_documents(chunks)
+
     points = []
-    for chunk, vector in zip(chunks, vectors, strict=True):
+    for chunk, vector in zip(chunks, vectors):
         points.append(
             PointStruct(
                 id=str(uuid.uuid4()),
@@ -115,7 +118,7 @@ def index_call_transcript(
 
     vectors = embeddings.embed_documents(chunks)
     points = []
-    for chunk, vector in zip(chunks, vectors, strict=True):
+    for chunk, vector in zip(chunks, vectors):
         points.append(
             PointStruct(
                 id=str(uuid.uuid4()),
@@ -150,11 +153,27 @@ def delete_document(knowledge_base_id: str) -> None:
     """按 knowledge_base_id 从 Qdrant 中物理删除文档的所有 chunks。"""
     qdrant.delete(
         collection_name=COLLECTION_NAME,
-        points_selector=Filter(
-            must=[
-                FieldCondition(
-                    key="knowledge_base_id", match=MatchValue(value=knowledge_base_id)
-                ),
-            ]
+        points_selector=FilterSelector(
+            filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="knowledge_base_id",
+                        match=MatchValue(value=knowledge_base_id),
+                    ),
+                ]
+            )
         ),
     )
+
+
+def reindex_document(text: str, metadata: dict[str, Any]) -> int:
+    """重新索引文档：先删除旧分片，再插入新分片。"""
+    kb_id = metadata.get("knowledge_base_id")
+    if not kb_id:
+        raise ValueError("重新索引必须提供 knowledge_base_id")
+
+    # 1. 删除旧数据
+    delete_document(kb_id)
+
+    # 2. 插入新数据
+    return index_document(text, metadata)

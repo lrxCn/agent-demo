@@ -2,7 +2,9 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 const pdfParse = require('pdf-parse');
 import { IKnowledgeDao } from '../dao/interfaces/knowledge-dao.interface';
@@ -95,17 +97,100 @@ export class KnowledgeService {
       });
 
       if (!response.ok) {
-        this.logger.warn(`Agent 向量化入库返回状态异常: ${response.status}`);
+        throw new InternalServerErrorException(
+          `Agent 向量化入库失败: ${response.status}`,
+        );
       } else {
         this.logger.log(
           `成功推送给 Agent 向量化: ${originalName} (ID: ${entity.id})`,
         );
       }
     } catch (e) {
-      this.logger.warn(`向 Agent 发送文件文本失败: ${(e as Error).message}`);
+      throw new InternalServerErrorException(
+        `向 Agent 发送文件文本失败: ${(e as Error).message}`,
+      );
     }
 
     return this.knowledgeDao.findById(entity.id);
+  }
+
+  async updateFile(
+    id: string,
+    file: Express.Multer.File,
+    dto: CreateKnowledgeDto,
+  ): Promise<KnowledgeBase> {
+    // 1. 获取现有数据（为了拿到 role_ids）
+    const existing = await this.knowledgeDao.findById(id);
+    if (!existing) {
+      throw new NotFoundException(`知识库文档 ${id} 不存在`);
+    }
+
+    const roleIds = existing.roles?.map((r) => r.id) || [];
+
+    // 2. 更新数据库记录
+    const updateData: Partial<KnowledgeBase> = {
+      name: dto.name || existing.name,
+      description: dto.description || existing.description,
+    };
+
+    // 3. 处理文件（如果有新文件则重新索引）
+    if (file) {
+      const originalName = file.originalname;
+      const mimeType = file.mimetype;
+      let textContent = '';
+
+      try {
+        if (
+          mimeType === 'text/plain' ||
+          mimeType === 'text/markdown' ||
+          originalName.endsWith('.md')
+        ) {
+          textContent = file.buffer.toString('utf-8');
+        } else if (mimeType === 'application/pdf') {
+          const data = await pdfParse(file.buffer);
+          textContent = data.text;
+        } else {
+          throw new BadRequestException(
+            '不支持的文件类型。仅支持 .txt, .md, .pdf',
+          );
+        }
+      } catch (e) {
+        throw new BadRequestException(`解析文件失败: ${(e as Error).message}`);
+      }
+
+      updateData.fileName = originalName;
+      updateData.fileType = mimeType;
+
+      // 同步给 Agent（重新切片）
+      try {
+        const response = await fetch('http://127.0.0.1:8123/knowledge/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: originalName,
+            text: textContent,
+            knowledge_base_id: id,
+            role_ids: roleIds,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new InternalServerErrorException(
+            `Agent 向量化更新失败: ${response.status}`,
+          );
+        } else {
+          this.logger.log(`成功推送给 Agent 向量化更新: ${originalName} (ID: ${id})`);
+        }
+      } catch (e) {
+        throw new InternalServerErrorException(
+          `向 Agent 发送更新请求失败: ${(e as Error).message}`,
+        );
+      }
+    }
+
+    await this.knowledgeDao.update(id, updateData);
+
+    return this.knowledgeDao.findById(id);
   }
 
   async findAll(
@@ -141,7 +226,10 @@ export class KnowledgeService {
     knowledgeBaseId: string,
     roleIds: string[],
   ): Promise<KnowledgeBase> {
-    const result = await this.knowledgeDao.assignRoles(knowledgeBaseId, roleIds);
+    const result = await this.knowledgeDao.assignRoles(
+      knowledgeBaseId,
+      roleIds,
+    );
 
     // 同步给 Agent
     try {
