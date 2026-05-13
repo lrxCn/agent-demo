@@ -33,18 +33,18 @@
 | 7-0-4 | `3.ARCHITECTURE.md` v1（唯一 ASCII 架构图） | ✅ | 2026-05-13 | 9 个 ★ 叠加点 + 4 条数据流 |
 | 7-0-5 | `4.ARCHITECTURE_FOR_AI.md` v1（纯文字） | ✅ | 2026-05-13 | Cursor 自动加载用 |
 | 7-0-6 | `PROGRESS.md`（本文件）初版 | ✅ | 2026-05-13 | |
-| 7-0-7 | `DEVELOPER_GUIDE.md` | ⬜ | | 开发者如何与 Cursor 配合完成本体系 |
-| 7-0-8 | `USER_GUIDE.md` | ⬜ | | 体系建成后，开发者如何日常使用看板/eval/告警 |
-| 7-0-9 | `README.md` | ⬜ | | 本子模块的一页纸入口 |
-| 7-0-10 | `prompts/phase-1-trace/*.md` 5 个 | ⬜ | | 详见下方 Phase 7-1 表 |
-| 7-0-11 | `prompts/phase-2-observability/*.md` 3 个 | ⬜ | | 详见下方 Phase 7-2 表 |
-| 7-0-12 | `prompts/phase-3-eval/*.md` 5 个 | ⬜ | | 详见下方 Phase 7-3 表 |
-| 7-0-13 | `prompts/phase-4-guardrails/*.md` 5 个 | ⬜ | | 详见下方 Phase 7-4 表 |
-| 7-0-14 | `prompts/phase-5-cost/*.md` 1 个 | ⬜ | | 详见下方 Phase 7-5 表 |
-| 7-0-15 | `.cursor/rules/05-monitoring-context.mdc` 新增 | ⬜ | | globs 限定为 `docs/monitor/**` + 三层 `observability/`+`guardrails/`+`eval/` |
-| 7-0-16 | `.cursorrules` 追加"监控体系开发约定"小节 | ⬜ | | 强制读 REQUIREMENTS + PROGRESS |
+| 7-0-7 | `DEVELOPER_GUIDE.md` | ✅ | 2026-05-13 | 开发者如何与 Cursor 配合完成本体系 |
+| 7-0-8 | `USER_GUIDE.md` | ✅ | 2026-05-13 | 体系建成后，开发者如何日常使用看板/eval/告警 |
+| 7-0-9 | `README.md` | ✅ | 2026-05-13 | 本子模块的一页纸入口 |
+| 7-0-10 | `prompts/phase-1-trace/*.md` 5 个 | ✅ | 2026-05-13 | 详见下方 Phase 7-1 表 |
+| 7-0-11 | `prompts/phase-2-observability/*.md` 3 个 | ✅ | 2026-05-13 | 详见下方 Phase 7-2 表 |
+| 7-0-12 | `prompts/phase-3-eval/*.md` 5 个 | ✅ | 2026-05-13 | 详见下方 Phase 7-3 表 |
+| 7-0-13 | `prompts/phase-4-guardrails/*.md` 5 个 | ✅ | 2026-05-13 | 详见下方 Phase 7-4 表 |
+| 7-0-14 | `prompts/phase-5-cost-playbook/*.md` 1 个 | ✅ | 2026-05-13 | 详见下方 Phase 7-5 表（目录名为 `phase-5-cost-playbook`） |
+| 7-0-15 | `.cursor/rules/05-monitoring-context.mdc` 新增 | ✅ | 2026-05-13 | globs 限定为 `docs/monitor/**` + 三层 `observability/`+`guardrails/`+`eval/` |
+| 7-0-16 | `.cursorrules` 追加"监控体系开发约定"小节 | ✅ | 2026-05-13 | 强制读 REQUIREMENTS + PROGRESS |
 | 7-0-17 | `.cursorignore` 追加 `docs/monitor/prompts/` | ⬜ | | 避免 prompt 文件污染索引 |
-| 7-0-18 | `docs/PROJECT_STATUS.md` 追加 "Phase 7: 监控与运维体系" | ⬜ | | 单行指向本文件 |
+| 7-0-18 | `docs/PROJECT_STATUS.md` 追加 "Phase 7: 监控与运维体系" | ✅ | 2026-05-13 | 已增加 Phase 7 区块并指向本文件 |
 
 ---
 
@@ -54,7 +54,7 @@
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
-| 7-1-1 | LangSmith 启用与项目命名 | ⬜ | | `.env` 确认 4 个 LANGCHAIN_* 变量；`LANGCHAIN_PROJECT` 改本地名；启动 `uv run langgraph dev --port 8123` 后 LangSmith Web 能看到 project |
+| 7-1-1 | LangSmith 启用与项目命名 | ✅ | 2026-05-13 | LangSmith 元数据上报成功（metadata submit 204）；project=`plan2code-agent`；首条 run=`019e2067-36cd-7e52-be82-665f2b011f97` 已触发 |
 | 7-1-2 | 前端 trace_id 注入（P1） | ⬜ | | 新增 `src/utils/trace.ts`；改 `api/request.ts` + `composables/useChat.ts` |
 | 7-1-3 | 后端 trace 拦截器 + 结构化日志（P4） | ⬜ | | 新增 `common/context/`、`interceptors/trace.interceptor.ts`、`middleware/structured-log.middleware.ts`；改 `app.module.ts` |
 | 7-1-4 | Agent metadata 主动打标 + SSE run_id 回流（P8 + SSE 改造） | ⬜ | | `state.py` 加 `app_trace_id`；`nodes.py chat_node` 调 `RunTree.add_metadata`；`agent.service.ts` stream_mode 加 `metadata` + 新 SSE payload `{type:'trace'}` |

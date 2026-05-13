@@ -175,3 +175,4 @@
 | 2026-05-10 | Phase 6 Step 6-5：Agent 新增 `index_call_transcript` 与 `search_my_calls` 工具（按 `user_id` 过滤权限）并暴露 HTTP 接口；前端挂断时上传附带 `callerUserId` 与 `calleeUserId`，后端 STT 完成后通过 HTTP 调用 Agent 入库 Qdrant |
 | 2026-05-10 | Phase 6 Step 6-6：完成 `search_my_calls` 工具开发并集成至 LangGraph，实现了仅通话双方可查询到相关录音的鉴权隔离。 |
 | 2026-05-13 | Phase 7 v1 规划完成：产出 `docs/monitor/` 9 份核心文档 + 19 个原子 prompt + `.cursor/rules/05-monitoring-context.mdc`；等待 Phase 7-1 ~ 7-5 实施。 |
+| 2026-05-13 | Phase 7 Step 7-1-1 执行完成：`.env` / `.env.example` LangSmith 配置核对通过，启动 `uv run langgraph dev --port 8123` 成功，已触发首条 run 并更新 `docs/monitor/PROGRESS.md`。 |
