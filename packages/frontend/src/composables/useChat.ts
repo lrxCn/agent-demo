@@ -9,6 +9,7 @@ type AgentStreamPayload =
   | { type: 'tool_call'; tool: string; params: Record<string, unknown> }
   | { type: 'done'; content: string; thread_id: string }
   | { type: 'error'; message: string }
+  | { type: 'trace'; trace_id: string; langsmith_run_id: string }
 
 function dispatchSseBlock(block: string, onPayload: (p: AgentStreamPayload) => void): void {
   const lines = block.split('\n').filter((l) => !l.startsWith(':'))
@@ -103,7 +104,11 @@ export function useChat() {
     }
 
     try {
-      const res = await streamChat(body, token, ac.signal)
+      const { response: res, traceId } = await streamChat(body, token, ac.signal)
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.debug('[trace] chat 流开始 trace_id=', traceId, 'assistantId=', assistantId)
+      }
       if (!res.ok) {
         const errText = await res.text().catch(() => '')
         throw new Error(errText || `请求失败 (${res.status})`)
@@ -115,6 +120,17 @@ export function useChat() {
 
       await readAgentSseStream(res, (payload) => {
         switch (payload.type) {
+          case 'trace':
+            // 把 LangSmith run_id 挂到当前 assistant message 的 meta（供 Phase 7-3 反馈按钮使用）
+            chat.setAssistantMeta(assistantId, {
+              trace_id: payload.trace_id,
+              langsmith_run_id: payload.langsmith_run_id,
+            })
+            if (import.meta.env.DEV) {
+              // eslint-disable-next-line no-console
+              console.debug('[trace] SSE 收到 trace 事件 run_id=', payload.langsmith_run_id)
+            }
+            break
           case 'token':
             if (payload.content) {
               chat.appendAssistantDelta(assistantId, payload.content)

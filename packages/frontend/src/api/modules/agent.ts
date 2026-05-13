@@ -1,4 +1,5 @@
 import request, { unwrapApiData } from '../request'
+import { generateTraceparent, parseTraceId } from '../../utils/trace'
 
 /** Agent SSE 对话请求体 */
 export interface StreamChatRequestBody {
@@ -11,23 +12,36 @@ export interface StreamChatRequestBody {
  * 发起 SSE 流式对话（使用 fetch，axios 无法消费流式 body）
  * @param accessToken JWT，未登录时传空字符串将不带 Authorization
  */
-export function streamChat(
+export interface StreamChatResult {
+  response: Response
+  traceId: string
+}
+
+export async function streamChat(
   data: StreamChatRequestBody,
   accessToken: string,
   signal?: AbortSignal,
-): Promise<Response> {
+): Promise<StreamChatResult> {
+  const traceparent = generateTraceparent()
+  const traceId = parseTraceId(traceparent)
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    traceparent,
   }
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`
   }
-  return fetch('/api/v1/agent/chat', {
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[trace] POST /agent/chat trace_id=', traceId)
+  }
+  const response = await fetch('/api/v1/agent/chat', {
     method: 'POST',
     headers,
     body: JSON.stringify(data),
     signal,
   })
+  return { response, traceId }
 }
 
 interface TranscribeResponse {
