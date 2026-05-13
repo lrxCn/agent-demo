@@ -4,4 +4,8 @@ dist/
 __pycache__/
 *.db
 *.sqlite
-prompts/
+# 监控体系运行时产物（Phase 7）
+*.audit.log
+packages/agent/.langgraph_api/
+packages/agent/guardrails/*.local.yaml
+.langsmith/

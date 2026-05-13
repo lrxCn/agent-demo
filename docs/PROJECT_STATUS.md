@@ -103,6 +103,26 @@
 
 ---
 
+## Phase 7: 监控 / 可观测 / Eval / 安全边界 / 成本优化（预计 6.5 天）
+
+> ⚠️ **本 Phase 的详细进度独立维护在 `docs/monitor/PROGRESS.md`**（接力棒）。
+> 此处仅作单行指向，避免双重维护造成不一致。
+
+**Phase 7 整体：📋 v1 规划完成（2026-05-13），等待 Phase 7-1 ~ 7-5 实施**
+
+| 步骤 | 描述 | 状态 | 详细文档 |
+|------|------|------|----------|
+| 7-1 | 全链路 Trace（LangSmith + W3C traceparent + 结构化日志） | ⬜ | `docs/monitor/PROGRESS.md` Phase 7-1 |
+| 7-2 | 可观测性看板（LangSmith Dashboard 6 卡片） | ⬜ | `docs/monitor/PROGRESS.md` Phase 7-2 |
+| 7-3 | Bad Case + Eval（反馈按钮 + Dataset + `pnpm eval:run`） | ⬜ | `docs/monitor/PROGRESS.md` Phase 7-3 |
+| 7-4 | Guardrails 安全边界（配额→工具白名单→输入 filter→PII→审计） | ⬜ | `docs/monitor/PROGRESS.md` Phase 7-4 |
+| 7-5 | 成本优化 Playbook（看-改-验证 反馈环） | ⬜ | `docs/monitor/PROGRESS.md` Phase 7-5 |
+
+**入口文档**：`docs/monitor/README.md`（一页纸索引到全部 9 份核心文档）
+**实施方式**：19 个原子 prompt 文件，每个对应一个 step，逐个 `@` 粘贴给 Cursor 执行。
+
+---
+
 ## 已知问题
 <!-- 在这里记录发现的 bug 或待解决的问题 -->
 
@@ -154,3 +174,4 @@
 | 2026-05-10 | Phase 6 Step 6-4：后端新增 `SttService` 对接 SiliconFlow Whisper（`FunAudioLLM/SenseVoiceSmall`）与 `POST /api/v1/agent/transcribe` 上传接口；前端 `useWebRTC` 在挂断时自动停止录音并上传转写，`VoiceCallView` 展示转写中状态和最近一次转写文本 |
 | 2026-05-10 | Phase 6 Step 6-5：Agent 新增 `index_call_transcript` 与 `search_my_calls` 工具（按 `user_id` 过滤权限）并暴露 HTTP 接口；前端挂断时上传附带 `callerUserId` 与 `calleeUserId`，后端 STT 完成后通过 HTTP 调用 Agent 入库 Qdrant |
 | 2026-05-10 | Phase 6 Step 6-6：完成 `search_my_calls` 工具开发并集成至 LangGraph，实现了仅通话双方可查询到相关录音的鉴权隔离。 |
+| 2026-05-13 | Phase 7 v1 规划完成：产出 `docs/monitor/` 9 份核心文档 + 19 个原子 prompt + `.cursor/rules/05-monitoring-context.mdc`；等待 Phase 7-1 ~ 7-5 实施。 |

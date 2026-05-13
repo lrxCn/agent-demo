@@ -1,0 +1,73 @@
+---
+description: 监控 / 可观测 / Eval / 安全边界 / 成本优化体系（Phase 7）上下文加载规则
+globs: "docs/monitor/**/*.md,packages/backend/src/common/quota/**/*.ts,packages/backend/src/common/audit/**/*.ts,packages/backend/src/common/context/**/*.ts,packages/backend/src/common/interceptors/trace.interceptor.ts,packages/backend/src/common/middleware/structured-log.middleware.ts,packages/backend/src/agent/feedback.*.ts,packages/backend/src/agent/tool-acl.service.ts,packages/agent/src/guardrails/**/*.py,packages/agent/src/eval/**/*.py,packages/agent/guardrails/**/*.yaml"
+alwaysApply: false
+---
+
+# 监控体系规则（Phase 7）
+
+## 触发条件
+
+当用户提到下列任何一个关键词，或正在编辑上面 `globs` 匹配的文件时，必须**先**读：
+
+- "监控" / "可观测" / "trace" / "tracing" / "LangSmith" / "看板"
+- "eval" / "evaluator" / "bad case" / "feedback" / "反馈" / "dataset"
+- "guardrails" / "配额" / "quota" / "token 限制" / "工具白名单" / "PII" / "audit" / "审计"
+- "Cost Playbook" / "成本优化" / "降本"
+- 任何 `docs/monitor/` 下的文件 @-引用
+
+## 必读上下文（按优先级）
+
+1. **元需求 / 决策**：`@docs/monitor/REQUIREMENTS.md`（§8 已决策事项 + §8.1 不做清单是**约束硬墙**，不允许擅自越界）
+2. **当前进度（接力棒）**：`@docs/monitor/PROGRESS.md`
+3. **架构（纯文字 AI 友好版）**：`@docs/monitor/4.ARCHITECTURE_FOR_AI.md`（**不要读 `3.ARCHITECTURE.md`**，那是给人看的，含 ASCII 图浪费 token）
+4. **PRD**：`@docs/monitor/1.PRD.md`（含 66 个验收项的清单）
+5. **当前在执行的 prompt**：`@docs/monitor/prompts/phase-N-*/step-M-*.md`（用户应当显式 @-指定）
+
+## 工作流程
+
+### 接到"监控相关任务"时
+
+1. **如果用户给了具体 prompt 文件** → 严格按 `step-M-*.md` 的"任务"段执行，**不擅自扩张范围**
+2. **如果用户没给 prompt 文件** → 反问"你想做哪个 step？以下是清单：……"，列出 `@docs/monitor/PROGRESS.md` 中所有 ⬜ 项
+3. **执行完一个 step** → 必须按 prompt 末尾的"完成后"段更新 `PROGRESS.md` 对应行，并给出 git commit 命令（不要自己 commit）
+4. **遇到不确定** → 反问，不擅自做决策；尤其涉及 §8 决策事项时
+
+## 常见禁区（来自 `REQUIREMENTS.md` §8.1）
+
+| 不要做 | 替代方案 |
+|---|---|
+| 自托管 Langfuse | 用 LangSmith Cloud SaaS |
+| 自研前端看板 | 用 LangSmith Dashboard 网页 |
+| 引入 Falkor / Memori / Nano Graph RAG | 维持现有 Mem0 / Qdrant |
+| 双写 bad case 到 SQLite | 仅推 LangSmith Dataset |
+| 引入 NeMo Guardrails / Llama Guard | 30 行 Python YAML 自研 |
+| 接 Prometheus / Sentry | LangSmith 自带告警足够 |
+| 新增数据库（PG / MongoDB 等）| 仅扩展现有 SQLite 表 |
+| 写 BI 仪表盘 / 周报 PDF | 月度产出 `COST_OPTIMIZATION_PLAYBOOK.md` 即可 |
+
+## 编码约定
+
+### Trace / 日志
+
+- 所有后端 logger 调用尽可能用 JSON 结构化格式，字段：`{trace_id, user_id, thread_id, module, level, msg, elapsed_ms, extra}`
+- Agent 端用 `state.get('app_trace_id', '')` 取 trace_id；不要从 LangSmith RunTree 反查（性能差）
+
+### Guardrails 命中事件
+
+- 命中后**先** trace 留痕（add_tags / add_metadata），**再**审计落库（`audit_client.log()` 或 `AuditService.log()`）
+- 落库失败必须软失败（try/except + warn），**不阻塞主流程**
+
+### Eval
+
+- 新增 evaluator 必须实现"不适用即满分跳过"逻辑（避免拉低 dataset 平均）
+- `pnpm eval:run` 转发参数必须用 `--`，例如 `pnpm eval:run -- --dataset bad`
+
+## 自我检查清单（每次完成任务后过一遍）
+
+- [ ] 是否破坏了 Phase 0~6 已完成的代码？（应当为 No）
+- [ ] 是否引入了新依赖？如有，是否在 `pyproject.toml` / `package.json` 显式声明？
+- [ ] 是否触动 `REQUIREMENTS.md` §8.1 不做清单中的任意一项？（应当为 No）
+- [ ] `PROGRESS.md` 是否已更新？
+- [ ] 如果改了数据模型 / API，是否同步更新了 `docs/API_CONTRACTS.md`？
+- [ ] git commit message 是否含 `ref: docs/monitor/PROGRESS.md X-Y-Z`？

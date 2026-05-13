@@ -30,3 +30,14 @@
 # 文档同步规范 (Doc-Sync)
 - **文档一致性检查**：如果你修改了数据模型、新增了核心 API、或者修改了跨模块交互逻辑，**你必须主动提醒用户**更新 `docs/architecture.md`，或者你直接提供文档更新的代码。
 - **注释即文档**：尽可能在代码的源头保持 JSDoc/Python Docstring 的更新，让局部文档跟随代码走。
+
+# 监控 / 可观测 / Eval / 安全边界 / 成本优化（Phase 7）
+- **监控相关任务**（含关键词 "trace / LangSmith / 看板 / eval / feedback / 配额 / quota / 工具白名单 / guardrails / PII / 审计 / Cost Playbook / 降本"）必须先读 `@docs/monitor/REQUIREMENTS.md` 与 `@docs/monitor/PROGRESS.md`；详细规则见 `.cursor/rules/05-monitoring-context.mdc`。
+- **架构约束**：
+  - 看板：仅用 LangSmith Cloud SaaS 网页，**不自建前端看板**、**不自托管 Langfuse**。
+  - bad case：直接推 LangSmith Dataset，**不双写 SQLite**。
+  - Guardrails：30 行级 Python + YAML 自研，**不引入 NeMo / Llama Guard**。
+  - 数据库：审计日志走现有 SQLite（`audit_logs` 表），**不新增数据库**。
+- **trace_id 体系**：W3C Trace Context 标准；前端 axios/fetch 注入 `traceparent` header；后端 `TraceContext`（AsyncLocalStorage）；Agent 通过 `state.app_trace_id` 传递并打到 LangSmith metadata。**禁止**自定义 trace_id 格式。
+- **prompt 范式**：分步实施 prompt 在 `docs/monitor/prompts/phase-N-*/step-M-*.md`，**一次只执行一个 step**；每个 step 完成后必须更新 `docs/monitor/PROGRESS.md`。
+- **不擅自扩张**：监控代码仅放在 `packages/{backend,agent}/src/**/{quota,audit,guardrails,context,eval}` 等新子目录下，**不重构** Phase 0~6 已稳定的代码。

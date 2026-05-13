@@ -477,13 +477,11 @@ export class AgentService {
 
   private async readStreamAsText(stream: Readable): Promise<string> {
     return await new Promise((resolve, reject) => {
-      const chunks: Buffer[] = [];
+      const chunks: string[] = [];
       stream.on('data', (c: Buffer | string) => {
-        chunks.push(typeof c === 'string' ? Buffer.from(c) : c);
+        chunks.push(typeof c === 'string' ? c : c.toString('utf8'));
       });
-      stream.on('end', () =>
-        resolve(Buffer.concat(chunks).toString('utf8').slice(0, 2000)),
-      );
+      stream.on('end', () => resolve(chunks.join('').slice(0, 2000)));
       stream.on('error', reject);
     });
   }
