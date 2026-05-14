@@ -96,7 +96,7 @@
 |------|------|------|----------|------|
 | 7-4-1 | token 配额（P5 Backend 部分） | ✅ | 2026-05-14 | `quota` 模块 + `ioredis` 依赖；`agent.controller.ts` 入口预检（checkAndReserve）；`agent.service.ts` 流结束 commit；`.env.example` 增加 3 个 QUOTA 配置 |
 | 7-4-2 | 工具白名单按角色生效（P5 Agent 部分） | ✅ | 2026-05-14 | `agent/tool-acl.service.ts` 解析 `permissionCodes`；`agent.service.ts` 注入并写入 `input.allowed_builtin_tools`；`state.py` 新字段；`nodes.py` 按白名单过滤 builtin（缺失字段兜底全允许） |
-| 7-4-3 | prompt-injection 关键词初筛（P7 输入侧） | ⬜ | | `agent/src/guardrails/input_filter.py` + `blacklist.yaml`；YAML 热更新 |
+| 7-4-3 | prompt-injection 关键词初筛（P7 输入侧） | ✅ | 2026-05-14 | `agent/src/guardrails/input_filter.py` + `blacklist.yaml`；YAML 热更新；`chat_node` 入口扫描最近 HumanMessage，命中后追加 SystemMessage 警告并写 trace tag/metadata（v1 仅警告不拒绝） |
 | 7-4-4 | 输出 PII / 敏感词扫描（P7 输出侧） | ⬜ | | `agent/src/guardrails/output_filter.py` + `sensitive.yaml`；正则替换身份证 / 手机号 / 邮箱 / 银行卡 |
 | 7-4-5 | 审计日志落库（P9） | ⬜ | | `dao/sqlite/audit-log.*` + `IAuditLogDao`；`audit.controller.ts` 内部接口（`INTERNAL_API_KEY` 校验）；`agent/src/guardrails/audit_client.py` HTTP 回写（DoD-4） |
 

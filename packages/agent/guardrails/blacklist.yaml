@@ -1,0 +1,35 @@
+# Prompt Injection 关键字黑名单
+# 命中规则：substring 包含（不区分大小写）或正则匹配
+# v1 仅警告不拒绝；v2 再考虑置信度评分
+
+substrings:
+  # 中文
+  - "忽略以上指令"
+  - "忽略以上所有指令"
+  - "无视之前的"
+  - "请扮演"
+  - "你现在是一个"
+  - "切换到"
+  - "system role"
+  - "system prompt"
+  - "重置你的"
+  - "解除你的限制"
+  - "DAN 模式"
+  - "越狱"
+  # 英文
+  - "ignore previous instructions"
+  - "ignore all previous"
+  - "disregard prior"
+  - "you are now"
+  - "act as"
+  - "system:"
+  - "developer mode"
+  - "jailbreak"
+  - "do anything now"
+
+regex:
+  # 伪造系统角色标签
+  - "</?\\s*(system|assistant|user)\\s*>"
+  # base64 编码注入嫌疑（连续 80+ 字符的 base64 alphabet）
+  - "[A-Za-z0-9+/]{80,}={0,2}"
+
