@@ -17,6 +17,7 @@ from src.graph.invoke_timing import track_llm_seconds, track_tool_seconds
 from src.graph.retry import invoke_tool_with_retry
 from src.graph.state import AgentState
 from src.guardrails import input_filter
+from src.guardrails import output_filter
 from src.tools.registry import registry
 
 TIMEOUT_SECONDS = 30
@@ -306,6 +307,34 @@ def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
 
     with track_llm_seconds():
         response = llm.invoke(messages)
+
+    # 监控体系 Phase 7-4 Step 4：输出 PII / 敏感词扫描
+    raw_content = response.content if isinstance(response.content, str) else None
+    if raw_content:
+        filter_out = output_filter.sanitize(raw_content)
+        if filter_out.hit:
+            # 1) 替换 response 内容
+            response = AIMessage(
+                content=filter_out.sanitized,
+                # 保留 tool_calls 不变
+                tool_calls=getattr(response, 'tool_calls', None) or [],
+            )
+            # 2) trace 留痕
+            if get_current_run_tree is not None:
+                try:
+                    run = get_current_run_tree()
+                    if run is not None:
+                        run.add_tags(['guardrail:output:pii'])
+                        run.add_metadata(
+                            {
+                                'guardrail_output_replacements': filter_out.replacements,
+                            },
+                        )
+                except Exception:  # noqa: BLE001
+                    pass
+            # 3) 占位：审计落库（Phase 7-4 Step 5 实现）
+            # TODO Step-5: audit_client.log('pii_filtered', {...})
+
     return {'messages': [response]}
 
 
