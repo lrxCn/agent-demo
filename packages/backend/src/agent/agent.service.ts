@@ -125,7 +125,7 @@ export class AgentService {
     const body = {
       assistant_id: 'agent',
       input,
-      stream_mode: ['messages-tuple', 'updates', 'metadata'],
+      stream_mode: ['messages-tuple', 'updates', 'events'],
     };
 
     const res = await this.http.axiosRef.post<Readable>(
@@ -158,7 +158,7 @@ export class AgentService {
       for await (const evt of this.parseSse(stream)) {
         // 监控体系：从 LangGraph metadata 事件中提取 run_id，第一时间下发 trace 事件
         if (!traceEventEmitted) {
-          const runId = this.extractRunIdFromMetadata(evt);
+          const runId = this.extractRunIdFromEvent(evt);
           if (runId) {
             traceEventEmitted = true;
             yield {
@@ -300,10 +300,11 @@ export class AgentService {
   }
 
   /**
-   * 从 LangGraph SSE `metadata` 流模式中提取顶层 run_id（即 LangSmith run_id）。
+   * 从 LangGraph SSE 事件中提取顶层 run_id（即 LangSmith run_id）。
+   * 兼容 `events` / `metadata` 两种模式，失败返回 null。
    * 失败返回 null。
    */
-  private extractRunIdFromMetadata(evt: {
+  private extractRunIdFromEvent(evt: {
     event: string;
     data: string;
   }): string | null {
@@ -317,18 +318,19 @@ export class AgentService {
     } catch {
       return null;
     }
-    // 多 stream_mode 格式：["metadata", { run_id: "...", ... }]
+    // 多 stream_mode 格式：["events", {...}] / ["metadata", {...}]
     let payload: Record<string, unknown> | undefined;
     if (
       Array.isArray(parsed) &&
       parsed.length >= 2 &&
-      parsed[0] === 'metadata' &&
+      typeof parsed[0] === 'string' &&
+      (parsed[0] === 'events' || parsed[0] === 'metadata') &&
       parsed[1] &&
       typeof parsed[1] === 'object'
     ) {
       payload = parsed[1] as Record<string, unknown>;
     } else if (
-      evt.event === 'metadata' &&
+      (evt.event === 'events' || evt.event === 'metadata') &&
       parsed &&
       typeof parsed === 'object'
     ) {
@@ -337,13 +339,43 @@ export class AgentService {
     if (!payload) {
       return null;
     }
-    const runId =
-      typeof payload.run_id === 'string'
-        ? payload.run_id
-        : typeof (payload as { id?: unknown }).id === 'string'
-        ? ((payload as { id?: unknown }).id as string)
-        : '';
+    const runId = this.pickUuid(payload);
     return runId || null;
+  }
+
+  /** 在任意嵌套对象中优先提取 `run_id`，其次提取形如 UUID 的 `id`。 */
+  private pickUuid(value: unknown): string {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!value || typeof value !== 'object') {
+      return '';
+    }
+    const stack: Record<string, unknown>[] = [value as Record<string, unknown>];
+    while (stack.length > 0) {
+      const current = stack.shift() as Record<string, unknown>;
+      const runId = current.run_id;
+      if (typeof runId === 'string' && uuidRegex.test(runId)) {
+        return runId;
+      }
+      const id = current.id;
+      if (typeof id === 'string' && uuidRegex.test(id)) {
+        return id;
+      }
+      for (const item of Object.values(current)) {
+        if (item && typeof item === 'object') {
+          if (Array.isArray(item)) {
+            for (const child of item) {
+              if (child && typeof child === 'object') {
+                stack.push(child as Record<string, unknown>);
+              }
+            }
+          } else {
+            stack.push(item as Record<string, unknown>);
+          }
+        }
+      }
+    }
+    return '';
   }
 
   private async *parseSse(
