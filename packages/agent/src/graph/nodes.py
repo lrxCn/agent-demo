@@ -16,8 +16,7 @@ from src.config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL_NA
 from src.graph.invoke_timing import track_llm_seconds, track_tool_seconds
 from src.graph.retry import invoke_tool_with_retry
 from src.graph.state import AgentState
-from src.guardrails import input_filter
-from src.guardrails import output_filter
+from src.guardrails import audit_client, input_filter, output_filter
 from src.tools.registry import registry
 
 TIMEOUT_SECONDS = 30
@@ -267,8 +266,16 @@ def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
         # 后面 memory 注入的 SystemMessage 仍会在前；这条只影响本轮 invoke
         messages = list(state['messages'])
         messages = [warning, *messages]
-        # 监控体系 Phase 7-4 Step 5（占位）：写入审计
-        # TODO Step-5: audit_client.log('prompt_injection', ...)
+        audit_client.log(
+            'prompt_injection',
+            trace_id=state.get('app_trace_id', ''),
+            user_id=state.get('mem0_user_id', ''),
+            severity='warn',
+            payload={
+                'matched_keywords': filter_result.matched_keywords[:5],
+                'last_human_text_preview': last_human_text[:200],
+            },
+        )
     else:
         messages = list(state['messages'])
     # 内置工具按"角色白名单"过滤（监控体系 Phase 7-4 Step 2）
@@ -332,8 +339,15 @@ def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
                         )
                 except Exception:  # noqa: BLE001
                     pass
-            # 3) 占位：审计落库（Phase 7-4 Step 5 实现）
-            # TODO Step-5: audit_client.log('pii_filtered', {...})
+            audit_client.log(
+                'pii_filtered',
+                trace_id=state.get('app_trace_id', ''),
+                user_id=state.get('mem0_user_id', ''),
+                severity='warn',
+                payload={
+                    'replacements': filter_out.replacements,
+                },
+            )
 
     return {'messages': [response]}
 

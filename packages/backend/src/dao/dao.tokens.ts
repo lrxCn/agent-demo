@@ -4,3 +4,4 @@ export const ROLE_DAO = 'IRoleDao';
 export const PERMISSION_DAO = 'IPermissionDao';
 export const STUDENT_DAO = 'IStudentDao';
 export const KNOWLEDGE_DAO = 'IKnowledgeDao';
+export const AUDIT_LOG_DAO = Symbol('AUDIT_LOG_DAO');

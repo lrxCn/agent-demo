@@ -6,12 +6,15 @@ import { Role } from '../role/role.entity';
 import { Student } from '../student/student.entity';
 import { User } from '../user/user.entity';
 import {
+  AUDIT_LOG_DAO,
   KNOWLEDGE_DAO,
   PERMISSION_DAO,
   ROLE_DAO,
   STUDENT_DAO,
   USER_DAO,
 } from './dao.tokens';
+import { AuditLogDaoSqlite } from './sqlite/audit-log-dao.sqlite';
+import { AuditLog } from './sqlite/audit-log.entity';
 import { KnowledgeDaoSqlite } from './sqlite/knowledge-dao.sqlite';
 import { PermissionDaoSqlite } from './sqlite/permission-dao.sqlite';
 import { RoleDaoSqlite } from './sqlite/role-dao.sqlite';
@@ -21,7 +24,14 @@ import { UserDaoSqlite } from './sqlite/user-dao.sqlite';
 /** DAO 抽象层：接口 token → SQLite 实现，切换数据源时只改绑定 */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role, Permission, Student, KnowledgeBase]),
+    TypeOrmModule.forFeature([
+      User,
+      Role,
+      Permission,
+      Student,
+      KnowledgeBase,
+      AuditLog,
+    ]),
   ],
   providers: [
     { provide: USER_DAO, useClass: UserDaoSqlite },
@@ -29,7 +39,15 @@ import { UserDaoSqlite } from './sqlite/user-dao.sqlite';
     { provide: PERMISSION_DAO, useClass: PermissionDaoSqlite },
     { provide: STUDENT_DAO, useClass: StudentDaoSqlite },
     { provide: KNOWLEDGE_DAO, useClass: KnowledgeDaoSqlite },
+    { provide: AUDIT_LOG_DAO, useClass: AuditLogDaoSqlite },
   ],
-  exports: [USER_DAO, ROLE_DAO, PERMISSION_DAO, STUDENT_DAO, KNOWLEDGE_DAO],
+  exports: [
+    USER_DAO,
+    ROLE_DAO,
+    PERMISSION_DAO,
+    STUDENT_DAO,
+    KNOWLEDGE_DAO,
+    AUDIT_LOG_DAO,
+  ],
 })
 export class DaoModule {}

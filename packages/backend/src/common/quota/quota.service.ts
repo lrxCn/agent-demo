@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import Redis from 'ioredis';
 
+import { AuditService } from '../audit/audit.service';
 import { TraceContext } from '../context/trace-context';
 import { loadQuotaConfig, type QuotaConfig } from './quota.config';
 
@@ -23,6 +24,8 @@ export class QuotaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(QuotaService.name);
   private redis!: Redis;
   private config!: QuotaConfig;
+
+  constructor(private readonly audit: AuditService) {}
 
   onModuleInit(): void {
     this.config = loadQuotaConfig(process.env);
@@ -75,6 +78,17 @@ export class QuotaService implements OnModuleInit, OnModuleDestroy {
     const threadN = Number(threadUsed ?? 0);
 
     if (dailyN + estimatedTokens > this.config.dailyTokensPerUser) {
+      await this.audit.log({
+        userId,
+        eventType: 'quota_exceeded',
+        severity: 'block',
+        payload: {
+          scope: 'daily',
+          used: dailyN,
+          requested: estimatedTokens,
+          cap: this.config.dailyTokensPerUser,
+        },
+      });
       this.logger.warn(
         JSON.stringify({
           trace_id: TraceContext.getTraceId(),
@@ -96,6 +110,17 @@ export class QuotaService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (threadN + estimatedTokens > this.config.perThread) {
+      await this.audit.log({
+        userId,
+        eventType: 'quota_exceeded',
+        severity: 'block',
+        payload: {
+          scope: 'thread',
+          used: threadN,
+          requested: estimatedTokens,
+          cap: this.config.perThread,
+        },
+      });
       this.logger.warn(
         JSON.stringify({
           trace_id: TraceContext.getTraceId(),

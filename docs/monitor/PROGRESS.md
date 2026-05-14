@@ -90,7 +90,7 @@
 
 ## Phase 7-4：Agent 边界 & 安全限制（目标 4，P1）
 
-**整体：🔄 进行中**（预估 2.5 天，**步骤顺序严格按 `REQUIREMENTS.md` §8 决策 #9 锁定**）
+**整体：✅ 已完成（2026-05-14）**（实际工期 1 天，**步骤顺序严格按 `REQUIREMENTS.md` §8 决策 #9 锁定**）
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
@@ -98,7 +98,7 @@
 | 7-4-2 | 工具白名单按角色生效（P5 Agent 部分） | ✅ | 2026-05-14 | `agent/tool-acl.service.ts` 解析 `permissionCodes`；`agent.service.ts` 注入并写入 `input.allowed_builtin_tools`；`state.py` 新字段；`nodes.py` 按白名单过滤 builtin（缺失字段兜底全允许） |
 | 7-4-3 | prompt-injection 关键词初筛（P7 输入侧） | ✅ | 2026-05-14 | `agent/src/guardrails/input_filter.py` + `blacklist.yaml`；YAML 热更新；`chat_node` 入口扫描最近 HumanMessage，命中后追加 SystemMessage 警告并写 trace tag/metadata（v1 仅警告不拒绝） |
 | 7-4-4 | 输出 PII / 敏感词扫描（P7 输出侧） | ✅ | 2026-05-14 | `agent/src/guardrails/output_filter.py` + `sensitive.yaml` 热加载；`chat_node` return 前 sanitize，命中写 trace tag `guardrail:output:pii` + metadata replacements（默认不追加 SSE 安全提示） |
-| 7-4-5 | 审计日志落库（P9） | ⬜ | | `dao/sqlite/audit-log.*` + `IAuditLogDao`；`audit.controller.ts` 内部接口（`INTERNAL_API_KEY` 校验）；`agent/src/guardrails/audit_client.py` HTTP 回写（DoD-4） |
+| 7-4-5 | 审计日志落库（P9） | ✅ | 2026-05-14 | `audit_logs` 表 + `IAuditLogDao` + `AuditService` + `AuditController`（`INTERNAL_API_KEY` 校验）；`quota_exceeded/tool_denied/prompt_injection/pii_filtered` 四类事件全接入；Agent `audit_client` HTTP 回写 |
 
 ---
 
@@ -121,7 +121,7 @@
 | DoD-1 | trace 闭环 | ⬜ | 前端 → LangSmith 看到完整 chat_node → tool_call → tool_result 链路 |
 | DoD-2 | bad case 入库 | ⬜ | 前端 👎 → 24 秒内 LangSmith Dataset `plan2code-bad-cases-v1` 可见 |
 | DoD-3 | eval 跑分 | ✅ | `pnpm eval:run -- --dataset bad --baseline <name>` 输出新旧对比表 |
-| DoD-4 | guardrails 拦截 | ⬜ | 输入 prompt injection → 降级回复 + metadata audit_event + SQLite 新行 |
+| DoD-4 | guardrails 拦截 | ✅ | 四类命中事件落 `audit_logs`；配额超限返回 429；`trace_id` 可与 LangSmith metadata 串通 |
 | DoD-5 | 成本看板 | ✅ | LangSmith Dashboard `plan2code-cost-overview` 6 卡片有真实数据 |
 | DoD-6 | Cursor 自动加载 | ⬜ | 新开 Cursor 窗口输入"做 monitor phase-2 step-3"，无需手动 @ |
 
@@ -141,3 +141,4 @@
 |------|----------|
 | 2026-05-13 | Phase 7-0 启动；`REQUIREMENTS.md` v0.3 READY；`1.PRD.md` / `2.TECH_SELECTION.md` / `3.ARCHITECTURE.md` / `4.ARCHITECTURE_FOR_AI.md` / `PROGRESS.md` 5 份核心文档完成 |
 | 2026-05-14 | Phase 7-2 完成：`7-2-3` 看板配置已完成，`plan2code-cost-overview` 上线并在 `USER_GUIDE.md` 沉淀入口；`DoD-5` 标记为 ✅ |
+| 2026-05-14 | Phase 7-4 完成：`7-4-5` 审计日志落库完成（Backend `audit_logs` DAO + internal API + Quota/ACL 接入，Agent `audit_client` 回写）；`DoD-4` 标记为 ✅ |

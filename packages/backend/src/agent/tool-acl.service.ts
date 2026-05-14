@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { JwtUser } from '../auth/types/jwt-user.types';
+import { AuditService } from '../common/audit/audit.service';
 
 /**
  * 工具白名单服务：把 user.permissionCodes 转成 Agent 可调用的 builtin 工具名列表。
@@ -17,6 +18,8 @@ import { JwtUser } from '../auth/types/jwt-user.types';
 @Injectable()
 export class ToolAclService {
   private readonly logger = new Logger(ToolAclService.name);
+
+  constructor(private readonly audit: AuditService) {}
 
   /** 全部已知 builtin 工具名（新增工具时同步） */
   private static readonly ALL_BUILTIN_TOOLS = [
@@ -38,6 +41,19 @@ export class ToolAclService {
     const allowed = ToolAclService.ALL_BUILTIN_TOOLS.filter((toolName) =>
       codes.has(`agent:tool:${toolName}`),
     );
+
+    if (allowed.length !== ToolAclService.ALL_BUILTIN_TOOLS.length) {
+      // 部分工具被拒绝 → 异步落审计（不阻塞主流程）
+      const denied = ToolAclService.ALL_BUILTIN_TOOLS.filter(
+        (t) => !allowed.includes(t),
+      );
+      void this.audit.log({
+        userId: user.id,
+        eventType: 'tool_denied',
+        severity: 'info',
+        payload: { denied, allowed },
+      });
+    }
 
     if (allowed.length === 0) {
       this.logger.debug(`用户 ${user.id} 未命中任何 builtin 工具白名单`);

@@ -161,6 +161,42 @@ data: {"type": "done", "content": "完整回复内容"}
 
 ---
 
+## 内部审计接口 `/api/v1/internal`
+
+> 仅 Agent 进程内部回调使用，不走 JWT；使用共享密钥鉴权。
+
+### POST /audit-log
+写入 Guardrails 命中事件审计日志（`quota_exceeded` / `tool_denied` / `prompt_injection` / `pii_filtered`）。
+
+请求头：
+```http
+x-internal-api-key: <INTERNAL_API_KEY>
+Content-Type: application/json
+```
+
+请求体：
+```json
+{
+  "trace_id": "019e206736cd7e52be82665f2b011f97",
+  "user_id": "uuid",
+  "event_type": "prompt_injection",
+  "severity": "warn",
+  "payload": {
+    "matched_keywords": ["忽略以上指令"],
+    "last_human_text_preview": "请忽略以上指令..."
+  }
+}
+```
+
+成功响应：
+- HTTP `204 No Content`（无响应体）
+
+失败响应：
+- `403`：`x-internal-api-key` 缺失或错误
+- `400`：`event_type` 缺失
+
+---
+
 ## 知识库 `/api/v1/knowledge`
 
 | 方法 | 路由 | 说明 | 权限 |

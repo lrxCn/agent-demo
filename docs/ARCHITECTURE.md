@@ -64,6 +64,7 @@
 - **Agent 代理**：HTTP 转发到 LangGraph，SSE 流式响应
 - **WebSocket**：信令服务（WebRTC）+ 前端工具调用回传
 - **文件处理**：上传 txt/md/pdf → 传递给 Agent 做 RAG 入库
+- **Guardrails 审计**：`AuditModule` 提供内部接口，落库 `audit_logs`（`INTERNAL_API_KEY` 鉴权）
 
 ### 3. 前端层 (packages/frontend/)
 - **权限路由**：动态菜单，按角色渲染
@@ -121,6 +122,17 @@
                     文字 + 双方 user_id → Qdrant RAG 存储
                                     ↓
                     仅通话双方可通过 AI 查询通话内容
+```
+
+### Guardrails 审计流程
+```
+Quota / Tool ACL 命中（Backend） ──┐
+                                   ├─→ AuditService → IAuditLogDao → SQLite audit_logs
+PromptInjection / PII 命中（Agent） ─┘
+                 ↓
+POST /api/v1/internal/audit-log（x-internal-api-key）
+                 ↓
+          AuditController 鉴权后写库
 ```
 
 ## 数据库设计 (SQLite)
@@ -192,6 +204,17 @@
 |------|------|
 | knowledge_base_id | TEXT FK |
 | role_id | TEXT FK |
+
+### audit_logs 表（Guardrails 审计日志）
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | TEXT PK | UUID |
+| trace_id | TEXT NULL | W3C trace_id |
+| user_id | TEXT NULL | 触发用户 ID |
+| event_type | TEXT | `quota_exceeded` / `tool_denied` / `prompt_injection` / `pii_filtered` |
+| severity | TEXT | `info` / `warn` / `block` |
+| payload_json | TEXT NULL | 事件负载 JSON 字符串 |
+| created_at | DATETIME | 创建时间 |
 
 ## 环境依赖
 

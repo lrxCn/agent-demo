@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AdminBootstrapService } from './bootstrap/admin-bootstrap.service';
+import { AuditModule } from './common/audit/audit.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { TraceInterceptor } from './common/interceptors/trace.interceptor';
@@ -41,6 +42,7 @@ import { UserModule } from './user/user.module';
     StudentModule,
     WsModule,
     QuotaModule,
+    AuditModule,
     AgentModule,
     KnowledgeModule,
   ],
