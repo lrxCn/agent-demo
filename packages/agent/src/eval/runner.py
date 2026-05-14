@@ -115,8 +115,114 @@ def _aggregate_results(results: Any) -> dict[str, Any]:
     return summary
 
 
-def run_eval(dataset_name: str, limit: int | None = None) -> dict[str, Any]:
-    """主流程：跑一遍 dataset 评估，返回指标摘要 dict。"""
+def _fetch_baseline_summary(experiment_name: str) -> dict[str, Any] | None:
+    """从 LangSmith Experiments 拉取 baseline 实验的 evaluator 指标摘要。"""
+    import requests
+
+    api_key = os.environ.get('LANGSMITH_API_KEY')
+    endpoint = os.environ.get(
+        'LANGCHAIN_ENDPOINT', 'https://api.smith.langchain.com',
+    ).rstrip('/')
+    if not api_key:
+        return None
+
+    try:
+        sess_resp = requests.get(
+            f'{endpoint}/sessions',
+            params={'name': experiment_name},
+            headers={'x-api-key': api_key},
+            timeout=15,
+        )
+        sess_resp.raise_for_status()
+        sessions_data = sess_resp.json()
+        sessions = (
+            sessions_data
+            if isinstance(sessions_data, list)
+            else sessions_data.get('sessions', [])
+            if isinstance(sessions_data, dict)
+            else []
+        )
+        if not isinstance(sessions, list) or not sessions:
+            print(
+                f'WARN: baseline 实验 "{experiment_name}" 不存在或无访问权限',
+                file=sys.stderr,
+            )
+            return None
+        session_id = sessions[0].get('id')
+        if not session_id:
+            return None
+
+        stats_resp = requests.get(
+            f'{endpoint}/sessions/{session_id}/stats',
+            headers={'x-api-key': api_key},
+            timeout=15,
+        )
+        stats_resp.raise_for_status()
+        stats = stats_resp.json()
+        feedback_stats = stats.get('feedback_stats') or {}
+
+        summary: dict[str, Any] = {}
+        for key, payload in feedback_stats.items():
+            if not isinstance(payload, dict):
+                continue
+            avg = payload.get('avg')
+            cnt = payload.get('n') or payload.get('count')
+            if avg is not None:
+                summary[f'{key}_avg'] = round(float(avg), 4)
+            if cnt is not None:
+                summary[f'{key}_count'] = int(cnt)
+        return summary
+    except Exception as e:  # noqa: BLE001
+        print(f'WARN: 拉取 baseline 失败: {e!r}', file=sys.stderr)
+        return None
+
+
+def _print_diff_table(
+    current: dict[str, Any],
+    baseline: dict[str, Any],
+    baseline_name: str,
+) -> None:
+    """终端打印 diff 表（无外部依赖，手动 ljust）。"""
+    rows: list[tuple[str, str, str, str]] = []
+    rows.append(('Metric', f'Baseline ({baseline_name})', 'Current', 'Δ'))
+    rows.append(('---', '---', '---', '---'))
+
+    keys = sorted(
+        set(k for k in current.keys() if k.endswith('_avg'))
+        | set(k for k in baseline.keys() if k.endswith('_avg')),
+    )
+    for key in keys:
+        cur = current.get(key)
+        base = baseline.get(key)
+        cur_str = f'{cur:.4f}' if isinstance(cur, (int, float)) else '-'
+        base_str = f'{base:.4f}' if isinstance(base, (int, float)) else '-'
+        if isinstance(cur, (int, float)) and isinstance(base, (int, float)):
+            delta = cur - base
+            arrow = '↑' if delta > 0 else ('↓' if delta < 0 else '=')
+            delta_str = f'{arrow} {delta:+.4f}'
+        else:
+            delta_str = '-'
+        rows.append((key, base_str, cur_str, delta_str))
+
+    widths = [max(len(str(r[i])) for r in rows) for i in range(4)]
+    for row in rows:
+        line = ' | '.join(str(row[i]).ljust(widths[i]) for i in range(4))
+        print(line)
+
+    print(
+        f'\nerrors:  baseline={baseline.get("errors", "-")}  current={current.get("errors", "-")}',
+    )
+    print(
+        f'total:   baseline={baseline.get("total", "-")}  current={current.get("total", "-")}',
+    )
+
+
+def run_eval(
+    dataset_name: str,
+    limit: int | None = None,
+    baseline: str | None = None,
+) -> dict[str, Any]:
+    """主流程：跑一遍 dataset 评估，可选与 baseline 实验对比。"""
     if not os.environ.get('LANGSMITH_API_KEY'):
         print('ERROR: LANGSMITH_API_KEY 未配置；请检查 .env', file=sys.stderr)
         sys.exit(1)
@@ -143,6 +249,16 @@ def run_eval(dataset_name: str, limit: int | None = None) -> dict[str, Any]:
     summary = _aggregate_results(results)
     print('\n>>> 评估完成 (results 已上报 LangSmith Experiments)')
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+    if baseline:
+        baseline_summary = _fetch_baseline_summary(baseline)
+        if baseline_summary is not None:
+            print(f'\n>>> 与 baseline 实验 "{baseline}" 对比：\n')
+            _print_diff_table(summary, baseline_summary, baseline)
+        else:
+            print(
+                f'>>> 无法拉取 baseline "{baseline}"，跳过 diff（见上方 WARN）',
+                file=sys.stderr,
+            )
     return summary
 
 
@@ -158,7 +274,7 @@ def cli() -> None:
         '--baseline',
         type=str,
         default=None,
-        help='与该实验对比（Step-5 启用，本 Step 暂不实现）',
+        help='与该实验对比（LangSmith experiment name）',
     )
     argv = sys.argv[1:]
     if argv and argv[0] == '--':
@@ -171,8 +287,8 @@ def cli() -> None:
     }
     dataset_name = alias_map.get(args.dataset, args.dataset)
     if args.baseline:
-        print('NOTE: --baseline 将在 Step 5 实现；本次忽略', file=sys.stderr)
-    run_eval(dataset_name, args.limit)
+        print(f'NOTE: 将在 eval 完成后与 baseline 实验 "{args.baseline}" 对比', file=sys.stderr)
+    run_eval(dataset_name, args.limit, args.baseline)
 
 
 if __name__ == '__main__':

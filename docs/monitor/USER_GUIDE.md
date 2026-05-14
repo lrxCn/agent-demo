@@ -148,10 +148,10 @@ Dataset 自动路由由后端 `FeedbackService` 根据 trace 的 tool_calls 类�
 
 ```bash
 # 在 monorepo 根目录
-pnpm eval:run --dataset plan2code-bad-cases-v1
+pnpm eval:run -- --dataset plan2code-bad-cases-v1
 
 # 与上次 baseline 对比
-pnpm eval:run --dataset plan2code-bad-cases-v1 --baseline experiment-2026-05-15-1430
+pnpm eval:run -- --dataset plan2code-bad-cases-v1 --baseline experiment-2026-05-15-1430
 ```
 
 ### 4.2 终端输出解读
@@ -198,7 +198,30 @@ LangSmith Experiment: https://smith.langchain.com/...experiment/.../
 2. 从 LangSmith Projects 中筛选 `tag = "tool:search_my_calls"` 的真实 trace，点击"Add to dataset"
 3. 修改 `packages/agent/src/eval/runner.py` 的 dataset 路由表，注册新场景
 4. （可选）新增一个 evaluator 在 `packages/agent/src/eval/evaluators/`
-5. 跑 `pnpm eval:run --dataset plan2code-calls-cases-v1`
+5. 跑 `pnpm eval:run -- --dataset plan2code-calls-cases-v1`
+
+### 4.5 Eval 跑分对比示例（DoD-3）
+
+```bash
+pnpm eval:run -- --dataset bad --limit 5 --baseline <上一次实验名>
+```
+
+期望输出（示例）：
+
+```text
+>>> 与 baseline 实验 "plan2code-eval-abc12345" 对比：
+
+Metric                      | Baseline (plan2code-eval-abc12345) | Current | Δ
+---                         | ---                                | ---     | ---
+llm_judge_score_avg         | 0.7234                             | 0.7345  | ↑ +0.0111
+ragas_answer_relevancy_avg  | 1.0000                             | 1.0000  | = +0.0000
+ragas_context_precision_avg | 1.0000                             | 1.0000  | = +0.0000
+ragas_faithfulness_avg      | 1.0000                             | 1.0000  | = +0.0000
+tool_call_match_avg         | 1.0000                             | 1.0000  | = +0.0000
+
+errors:  baseline=0  current=0
+total:   baseline=2  current=2
+```
 
 ---
 

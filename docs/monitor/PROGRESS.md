@@ -76,7 +76,7 @@
 
 ## Phase 7-3：Bad Case + Eval（目标 3，P1）
 
-**整体：⬜ 未开始**（预估 2 天，前置依赖 Phase 7-1）
+**整体：✅ 已完成（2026-05-14）**（实际工期 1 天，前置依赖 Phase 7-1）
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
@@ -84,7 +84,7 @@
 | 7-3-2 | 前端反馈 UI（P3） | ✅ | 2026-05-14 | `ChatBubble.vue` 三按钮 + `postFeedback` API + `chat` store `setMessageFeedback`；点击已发起 POST（Step 3 前预期 404） |
 | 7-3-3 | 后端反馈接口 + LangSmith REST（P6） | ✅ | 2026-05-14 | `feedback.controller` + `feedback.service`；`POST /agent/feedback` 转发 LangSmith `/feedback` + `PATCH /runs/{id}` tag；前端三按钮联调可用 |
 | 7-3-4 | Dataset 自动路由 | ✅ | 2026-05-14 | `feedback.service.ts` 新增 `fetchRun/routeDataset/ensureDataset/addRunToDataset`；按 tags 路由 3 个 dataset；`down` 反馈自动入库 |
-| 7-3-5 | Eval `--baseline` 跑分对比 | ⬜ | | `runner.py` 加 `--baseline` 参数；终端输出 diff 表（DoD-3） |
+| 7-3-5 | Eval `--baseline` 跑分对比 | ✅ | 2026-05-14 | `runner.py` 新增 `_fetch_baseline_summary` + `_print_diff_table`；CLI `--baseline` 输出 4 列 diff 表 |
 
 ---
 
@@ -120,7 +120,7 @@
 |---|---|------|----------|
 | DoD-1 | trace 闭环 | ⬜ | 前端 → LangSmith 看到完整 chat_node → tool_call → tool_result 链路 |
 | DoD-2 | bad case 入库 | ⬜ | 前端 👎 → 24 秒内 LangSmith Dataset `plan2code-bad-cases-v1` 可见 |
-| DoD-3 | eval 跑分 | ⬜ | `pnpm eval:run --baseline <name>` 输出新旧对比表 |
+| DoD-3 | eval 跑分 | ✅ | `pnpm eval:run -- --dataset bad --baseline <name>` 输出新旧对比表 |
 | DoD-4 | guardrails 拦截 | ⬜ | 输入 prompt injection → 降级回复 + metadata audit_event + SQLite 新行 |
 | DoD-5 | 成本看板 | ✅ | LangSmith Dashboard `plan2code-cost-overview` 6 卡片有真实数据 |
 | DoD-6 | Cursor 自动加载 | ⬜ | 新开 Cursor 窗口输入"做 monitor phase-2 step-3"，无需手动 @ |
