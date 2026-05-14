@@ -5,6 +5,11 @@ from concurrent.futures import TimeoutError as FuturesTimeout
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
+try:
+    # LangSmith SDK 提供 run tree 访问能力；自托管 / 无 LangSmith 时返回 None
+    from langsmith.run_helpers import get_current_run_tree
+except ImportError:  # pragma: no cover
+    get_current_run_tree = None  # type: ignore[assignment]
 
 from src.config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL_NAME
 from src.graph.invoke_timing import track_llm_seconds, track_tool_seconds
@@ -101,6 +106,22 @@ def _tool_call_parts(tool_call: object) -> tuple[str, dict[str, object], str]:
 
 def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
     """聊天节点（使用 memory_search_node 写入的 retrieved_memories 注入系统提示）"""
+    # 监控体系：把业务维度打到 LangSmith trace metadata
+    if get_current_run_tree is not None:
+        try:
+            run = get_current_run_tree()
+            if run is not None:
+                run.add_metadata(
+                    {
+                        'app_trace_id': state.get('app_trace_id', ''),
+                        'mem0_user_id': state.get('mem0_user_id', ''),
+                        'thread_id': state.get('thread_id', ''),
+                        'role_ids': state.get('user_role_ids', []) or [],
+                    },
+                )
+        except Exception:  # noqa: BLE001
+            # 监控埋点失败不影响主流程
+            pass
     # 内置工具始终加载
     builtin_tools = registry.get_tools(categories=['builtin'])
     # 前端工具按当前页面注册的可用列表按需加载

@@ -15,3 +15,5 @@ class AgentState(TypedDict):
     user_role_ids: NotRequired[list[str]]
     # 由 memory_search_node 写入；invoke 时可不传
     retrieved_memories: NotRequired[list[str]]
+    # 监控体系：来自前端 W3C traceparent 的 32 hex；用于在 LangSmith trace 上打 metadata
+    app_trace_id: NotRequired[str]

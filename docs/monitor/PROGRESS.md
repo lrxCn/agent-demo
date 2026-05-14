@@ -57,7 +57,7 @@
 | 7-1-1 | LangSmith 启用与项目命名 | ✅ | 2026-05-13 | LangSmith 元数据上报成功（metadata submit 204）；project=`plan2code-agent`；首条 run=`019e2067-36cd-7e52-be82-665f2b011f97` 已触发 |
 | 7-1-2 | 前端 trace_id 注入（P1） | ✅ | 2026-05-13 | utils/trace.ts + axios/streamChat 注入 traceparent + useChat 预留 trace 事件分支 |
 | 7-1-3 | 后端 trace 拦截器 + 结构化日志（P4） | ✅ | 2026-05-13 | TraceContext / TraceInterceptor / StructuredLogMiddleware 已注册；agent.service.ts 演示日志改造完成 |
-| 7-1-4 | Agent metadata 主动打标 + SSE run_id 回流（P8 + SSE 改造） | ⬜ | | `state.py` 加 `app_trace_id`；`nodes.py chat_node` 调 `RunTree.add_metadata`；`agent.service.ts` stream_mode 加 `metadata` + 新 SSE payload `{type:'trace'}` |
+| 7-1-4 | Agent metadata 主动打标 + SSE run_id 回流（P8 + SSE 改造） | ✅ | 2026-05-14 | `state.py` 加 `app_trace_id`；`chat_node` 调 `RunTree.add_metadata`；`agent.service.ts` 增加 `metadata` stream_mode + `extractRunIdFromMetadata` + SSE `trace` 事件 |
 | 7-1-5 | 端到端 trace 验证 | ⬜ | | 三端 trace_id 一致；LangSmith metadata 可搜；错误路径 trace_id 可回溯（DoD-1） |
 
 ---

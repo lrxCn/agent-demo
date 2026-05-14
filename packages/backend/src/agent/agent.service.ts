@@ -13,12 +13,13 @@ import { AppGateway } from '../common/gateways/app.gateway';
 import { UserFrontendToolsService } from '../common/gateways/user-frontend-tools.service';
 import { ChatDto } from './dto/chat.dto';
 
-/** 下发给前端的 SSE 业务负载（与 API_CONTRACTS 对齐，含 error 便于排错） */
+/** 下发给前端的 SSE 业务负载（与 API_CONTRACTS 对齐，含 trace / error 便于排错） */
 export type AgentChatStreamPayload =
   | { type: 'token'; content: string }
   | { type: 'tool_call'; tool: string; params: Record<string, unknown> }
   | { type: 'done'; content: string; thread_id: string }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: 'trace'; trace_id: string; langsmith_run_id: string };
 
 interface LangGraphThreadCreateResponse {
   thread_id: string;
@@ -117,12 +118,14 @@ export class AgentService {
       thread_id: threadId,
       available_frontend_tools: mergedTools,
       user_role_ids: user.roleIds,
+      // 监控体系：把 W3C trace_id 传给 Agent 用于 LangSmith metadata
+      app_trace_id: traceId,
     };
 
     const body = {
       assistant_id: 'agent',
       input,
-      stream_mode: ['messages-tuple', 'updates'],
+      stream_mode: ['messages-tuple', 'updates', 'metadata'],
     };
 
     const res = await this.http.axiosRef.post<Readable>(
@@ -149,8 +152,22 @@ export class AgentService {
       string,
       { tool: string; params: Record<string, unknown> }
     >();
+    let traceEventEmitted = false;
+    const appTraceId = traceId;
     try {
       for await (const evt of this.parseSse(stream)) {
+        // 监控体系：从 LangGraph metadata 事件中提取 run_id，第一时间下发 trace 事件
+        if (!traceEventEmitted) {
+          const runId = this.extractRunIdFromMetadata(evt);
+          if (runId) {
+            traceEventEmitted = true;
+            yield {
+              type: 'trace',
+              trace_id: appTraceId,
+              langsmith_run_id: runId,
+            };
+          }
+        }
         for (const out of this.mapLangGraphEvent(
           evt,
           available,
@@ -280,6 +297,53 @@ export class AgentService {
         }
       }
     }
+  }
+
+  /**
+   * 从 LangGraph SSE `metadata` 流模式中提取顶层 run_id（即 LangSmith run_id）。
+   * 失败返回 null。
+   */
+  private extractRunIdFromMetadata(evt: {
+    event: string;
+    data: string;
+  }): string | null {
+    const raw = evt.data.trim();
+    if (!raw || raw === '[DONE]') {
+      return null;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw) as unknown;
+    } catch {
+      return null;
+    }
+    // 多 stream_mode 格式：["metadata", { run_id: "...", ... }]
+    let payload: Record<string, unknown> | undefined;
+    if (
+      Array.isArray(parsed) &&
+      parsed.length >= 2 &&
+      parsed[0] === 'metadata' &&
+      parsed[1] &&
+      typeof parsed[1] === 'object'
+    ) {
+      payload = parsed[1] as Record<string, unknown>;
+    } else if (
+      evt.event === 'metadata' &&
+      parsed &&
+      typeof parsed === 'object'
+    ) {
+      payload = parsed as Record<string, unknown>;
+    }
+    if (!payload) {
+      return null;
+    }
+    const runId =
+      typeof payload.run_id === 'string'
+        ? payload.run_id
+        : typeof (payload as { id?: unknown }).id === 'string'
+        ? ((payload as { id?: unknown }).id as string)
+        : '';
+    return runId || null;
   }
 
   private async *parseSse(
