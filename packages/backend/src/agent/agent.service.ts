@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import type { Readable } from 'stream';
 
 import { JwtUser } from '../auth/types/jwt-user.types';
+import { TraceContext } from '../common/context/trace-context';
 import { AppGateway } from '../common/gateways/app.gateway';
 import { UserFrontendToolsService } from '../common/gateways/user-frontend-tools.service';
 import { ChatDto } from './dto/chat.dto';
@@ -90,6 +91,21 @@ export class AgentService {
     const mergedTools = this.mergeAvailableFrontendTools(
       user.id,
       dto.available_tools,
+    );
+    const traceId = TraceContext.getTraceId();
+    this.logger.log(
+      JSON.stringify({
+        trace_id: traceId,
+        user_id: user.id,
+        thread_id: threadId,
+        module: 'agent',
+        level: 'info',
+        msg: 'streamChat 开始',
+        extra: {
+          message_len: dto.message.length,
+          available_tools_count: mergedTools.length,
+        },
+      }),
     );
     const available = new Set(mergedTools);
     const emittedToolKeys = new Set<string>();
