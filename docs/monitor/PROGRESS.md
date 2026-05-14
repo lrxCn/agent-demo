@@ -90,11 +90,11 @@
 
 ## Phase 7-4：Agent 边界 & 安全限制（目标 4，P1）
 
-**整体：⬜ 未开始**（预估 2.5 天，**步骤顺序严格按 `REQUIREMENTS.md` §8 决策 #9 锁定**）
+**整体：🔄 进行中**（预估 2.5 天，**步骤顺序严格按 `REQUIREMENTS.md` §8 决策 #9 锁定**）
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
-| 7-4-1 | token 配额（P5 Backend 部分） | ⬜ | | `common/quota/quota.service.ts`（Redis 计数）；`agent.service.ts` 接入 checkAndReserve；`.env` 加 `QUOTA_DAILY_TOKENS_PER_USER` `QUOTA_PER_THREAD` |
+| 7-4-1 | token 配额（P5 Backend 部分） | ✅ | 2026-05-14 | `quota` 模块 + `ioredis` 依赖；`agent.controller.ts` 入口预检（checkAndReserve）；`agent.service.ts` 流结束 commit；`.env.example` 增加 3 个 QUOTA 配置 |
 | 7-4-2 | 工具白名单按角色生效（P5 Agent 部分） | ⬜ | | `common/quota/tool-acl.service.ts`；权限 `agent:tool:*` 4 条；`state.py` `allowed_builtin_tools`；`nodes.py chat_node` 过滤 |
 | 7-4-3 | prompt-injection 关键词初筛（P7 输入侧） | ⬜ | | `agent/src/guardrails/input_filter.py` + `blacklist.yaml`；YAML 热更新 |
 | 7-4-4 | 输出 PII / 敏感词扫描（P7 输出侧） | ⬜ | | `agent/src/guardrails/output_filter.py` + `sensitive.yaml`；正则替换身份证 / 手机号 / 邮箱 / 银行卡 |

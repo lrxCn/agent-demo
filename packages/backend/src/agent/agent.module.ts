@@ -1,6 +1,7 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 
+import { QuotaModule } from '../common/quota/quota.module';
 import { WsModule } from '../common/gateways/ws.module';
 import { AgentController } from './agent.controller';
 import { AgentService } from './agent.service';
@@ -9,7 +10,7 @@ import { FeedbackService } from './feedback.service';
 import { SttService } from './stt.service';
 
 @Module({
-  imports: [HttpModule, WsModule],
+  imports: [HttpModule, WsModule, QuotaModule],
   controllers: [AgentController, FeedbackController],
   providers: [AgentService, SttService, FeedbackService],
 })

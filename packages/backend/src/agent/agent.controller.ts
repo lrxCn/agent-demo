@@ -15,6 +15,7 @@ import { JwtUser } from '../auth/types/jwt-user.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { SkipResponseWrap } from '../common/decorators/skip-response-wrap.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { QuotaService } from '../common/quota/quota.service';
 import { AgentChatStreamPayload, AgentService } from './agent.service';
 import { ChatDto } from './dto/chat.dto';
 import { SttService } from './stt.service';
@@ -27,6 +28,7 @@ export class AgentController {
   constructor(
     private readonly agentService: AgentService,
     private readonly sttService: SttService,
+    private readonly quota: QuotaService,
   ) {}
 
   /**
@@ -40,6 +42,13 @@ export class AgentController {
     @CurrentUser() user: JwtUser,
     @Res({ passthrough: false }) res: Response,
   ): Promise<void> {
+    // Phase 7-4 Step 1：按输入粗估 + 预留输出做入口配额预检
+    const estimated = this.quota.estimateTokens(body.message) + 2000;
+    const threadIdForReserve = body.thread_id?.trim()
+      ? body.thread_id
+      : `pending-${user.id}`;
+    await this.quota.checkAndReserve(user.id, threadIdForReserve, estimated);
+
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');

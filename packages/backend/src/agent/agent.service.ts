@@ -11,6 +11,7 @@ import { JwtUser } from '../auth/types/jwt-user.types';
 import { TraceContext } from '../common/context/trace-context';
 import { AppGateway } from '../common/gateways/app.gateway';
 import { UserFrontendToolsService } from '../common/gateways/user-frontend-tools.service';
+import { QuotaService } from '../common/quota/quota.service';
 import { ChatDto } from './dto/chat.dto';
 
 /** 下发给前端的 SSE 业务负载（与 API_CONTRACTS 对齐，含 trace / error 便于排错） */
@@ -34,6 +35,7 @@ export class AgentService {
     private readonly config: ConfigService,
     private readonly userFrontendTools: UserFrontendToolsService,
     private readonly gateway: AppGateway,
+    private readonly quota: QuotaService,
   ) {}
 
   /** WebSocket 缓存与请求体中的工具名合并（去重），供 LangGraph 注入前端工具 */
@@ -201,7 +203,27 @@ export class AgentService {
     const threadId = dto.thread_id?.trim()
       ? dto.thread_id
       : await this.createThread();
-    yield* this.streamChat(threadId, dto, user);
+    let completionText = '';
+    try {
+      for await (const payload of this.streamChat(threadId, dto, user)) {
+        if (payload.type === 'token' && payload.content) {
+          completionText += payload.content;
+        } else if (payload.type === 'done' && payload.content) {
+          completionText = payload.content;
+        }
+        yield payload;
+      }
+    } finally {
+      // Phase 7-4 Step 1：流式结束后按粗估写回 token 用量
+      try {
+        const promptTokens = this.quota.estimateTokens(dto.message);
+        const completionTokens = this.quota.estimateTokens(completionText);
+        const total = promptTokens + completionTokens;
+        await this.quota.commit(user.id, threadId, total);
+      } catch (e) {
+        this.logger.warn(`配额 commit 失败 user=${user.id}: ${(e as Error).message}`);
+      }
+    }
   }
 
   /** 通过 WebSocket 向前端推送 tool:invoke 事件 */

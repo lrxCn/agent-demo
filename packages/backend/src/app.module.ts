@@ -12,6 +12,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { TraceInterceptor } from './common/interceptors/trace.interceptor';
 import { WsModule } from './common/gateways/ws.module';
 import { StructuredLogMiddleware } from './common/middleware/structured-log.middleware';
+import { QuotaModule } from './common/quota/quota.module';
 import { DaoModule } from './dao/dao.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
 import { PermissionModule } from './permission/permission.module';
@@ -39,6 +40,7 @@ import { UserModule } from './user/user.module';
     UserModule,
     StudentModule,
     WsModule,
+    QuotaModule,
     AgentModule,
     KnowledgeModule,
   ],
