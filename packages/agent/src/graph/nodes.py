@@ -1,4 +1,5 @@
 """图节点定义"""
+import re
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeout
 
@@ -39,6 +40,80 @@ def _collect_trailing_tool_messages(state: AgentState) -> list[ToolMessage]:
             break
     batch.reverse()
     return batch
+
+
+# 监控体系 Phase 7-2：search_knowledge_base 工具“无结果”文案关键字
+_KB_MISS_MARKERS: tuple[str, ...] = (
+    '未找到相关知识。',
+    '未找到相关内容',
+    '知识库无相关结果',
+)
+_KB_HIT_SCORE_THRESHOLD = 0.2
+_KB_SCORE_PATTERN = re.compile(r'(?:相关度|score)\s*[:：]\s*([01](?:\.\d+)?)')
+
+
+def _extract_kb_scores(content: str) -> list[float]:
+    """从工具返回文本中提取相关度分数（0~1）。"""
+    scores: list[float] = []
+    for match in _KB_SCORE_PATTERN.findall(content):
+        try:
+            value = float(match)
+        except ValueError:
+            continue
+        if 0 <= value <= 1:
+            scores.append(value)
+    return scores
+
+
+def _is_kb_miss_content(content: str) -> bool:
+    """基于文案与分数综合判断是否 miss。"""
+    stripped = content.strip()
+    if not stripped:
+        return True
+    if len(stripped) < 10:
+        return True
+    if any(marker in stripped for marker in _KB_MISS_MARKERS):
+        return True
+
+    # 若工具输出含相关度分数，则以分数阈值优先判定 hit/miss
+    scores = _extract_kb_scores(stripped)
+    if scores and max(scores) < _KB_HIT_SCORE_THRESHOLD:
+        return True
+    return False
+
+
+def _kb_search_hit_or_miss(state: AgentState) -> str | None:
+    """
+    扫描本轮尾部工具结果，找最近一条 search_knowledge_base 输出：
+      - 内容空 / 命中 miss 关键字 → 'miss'
+      - 否则 → 'hit'
+    若本轮无该工具调用，返回 None（不打 tag）。
+    """
+    trailing_tool_messages = _collect_trailing_tool_messages(state)
+    if not trailing_tool_messages:
+        return None
+
+    # 兼容旧版本/序列化场景：ToolMessage.name 可能为空，用 tool_call_id 反查
+    tool_call_name_map: dict[str, str] = {}
+    for msg in reversed(state['messages']):
+        if not isinstance(msg, AIMessage) or not msg.tool_calls:
+            continue
+        for tool_call in msg.tool_calls:
+            name, _, call_id = _tool_call_parts(tool_call)
+            if call_id and name and call_id not in tool_call_name_map:
+                tool_call_name_map[call_id] = name
+
+    for msg in reversed(trailing_tool_messages):
+        msg_name = getattr(msg, 'name', '') or tool_call_name_map.get(
+            getattr(msg, 'tool_call_id', ''),
+            '',
+        )
+        if msg_name != 'search_knowledge_base':
+            continue
+
+        content = msg.content if isinstance(msg.content, str) else str(msg.content)
+        return 'miss' if _is_kb_miss_content(content) else 'hit'
+    return None
 
 
 def _tool_message_indicates_failure(content: str) -> bool:
@@ -104,6 +179,30 @@ def _tool_call_parts(tool_call: object) -> tuple[str, dict[str, object], str]:
     return name, args, call_id
 
 
+def _add_tags_to_trace_root(tags: list[str]) -> None:
+    """把 tag 写到 trace 根 run，确保在 Traces 顶级行可见。"""
+    if not tags or get_current_run_tree is None:
+        return
+    run = get_current_run_tree()
+    if run is None:
+        return
+    # 当前节点 run 也保留一份，便于 span 级排障
+    run.add_tags(tags)
+
+    trace_id = getattr(run, 'trace_id', None)
+    client = getattr(run, 'ls_client', None)
+    if trace_id is None or client is None:
+        return
+    try:
+        root_run = client.read_run(trace_id)
+        existing_tags = list(getattr(root_run, 'tags', []) or [])
+        merged_tags = list(dict.fromkeys(existing_tags + tags))
+        client.update_run(trace_id, tags=merged_tags)
+    except Exception:  # noqa: BLE001
+        # 顶级打标失败不影响主流程
+        pass
+
+
 def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
     """聊天节点（使用 memory_search_node 写入的 retrieved_memories 注入系统提示）"""
     # 监控体系：把业务维度打到 LangSmith trace metadata
@@ -119,6 +218,15 @@ def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
                         'role_ids': state.get('user_role_ids', []) or [],
                     },
                 )
+        except Exception:  # noqa: BLE001
+            # 监控埋点失败不影响主流程
+            pass
+    # 监控体系 Phase 7-2：根据 search_knowledge_base 工具结果打 rag tag
+    if get_current_run_tree is not None:
+        try:
+            rag_result = _kb_search_hit_or_miss(state)
+            if rag_result is not None:
+                _add_tags_to_trace_root([f'rag:{rag_result}'])
         except Exception:  # noqa: BLE001
             # 监控埋点失败不影响主流程
             pass
@@ -179,6 +287,7 @@ def tool_node_with_retry(state: AgentState) -> dict[str, list[BaseMessage]]:
                 ToolMessage(
                     content=f'未找到工具: {tool_name}',
                     tool_call_id=tool_call_id,
+                    name=tool_name,
                 ),
             )
             continue
@@ -197,10 +306,36 @@ def tool_node_with_retry(state: AgentState) -> dict[str, list[BaseMessage]]:
                         ToolMessage(
                             content=f'工具 {tool_name} 调用超时（{TIMEOUT_SECONDS} 秒）',
                             tool_call_id=tool_call_id,
+                            name=tool_name,
                         ),
                     )
         finally:
             # 避免 with 退出时 wait=True 一直等到 sleep 线程自然结束
             pool.shutdown(wait=False, cancel_futures=True)
+
+    # 监控体系 Phase 7-2：若本轮工具批次含 search_knowledge_base，给当前 span 也打 tag
+    if get_current_run_tree is not None:
+        try:
+            kb_msg = next(
+                (
+                    m
+                    for m in results
+                    if getattr(m, 'name', '') == 'search_knowledge_base'
+                ),
+                None,
+            )
+            if kb_msg is not None:
+                content = (
+                    kb_msg.content
+                    if isinstance(kb_msg.content, str)
+                    else str(kb_msg.content)
+                )
+                hit = not _is_kb_miss_content(content)
+                run = get_current_run_tree()
+                if run is not None:
+                    run.add_tags([f'rag:{"hit" if hit else "miss"}'])
+        except Exception:  # noqa: BLE001
+            # 监控埋点失败不影响主流程
+            pass
 
     return {'messages': results}

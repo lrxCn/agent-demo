@@ -26,7 +26,11 @@ def invoke_tool_with_retry(
     for attempt in range(MAX_RETRIES):
         try:
             result = tool.invoke(tool_input)
-            return ToolMessage(content=str(result), tool_call_id=tool_call_id)
+            return ToolMessage(
+                content=str(result),
+                tool_call_id=tool_call_id,
+                name=tool.name,
+            )
         except Exception as e:
             last_error = e
             n = attempt + 1
@@ -51,4 +55,5 @@ def invoke_tool_with_retry(
     return ToolMessage(
         content=f'⚠️ {error_msg}',
         tool_call_id=tool_call_id,
+        name=tool.name,
     )

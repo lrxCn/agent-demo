@@ -18,6 +18,8 @@ Phase 7-2 第二步。在 `chat_node` 内根据上一轮 `search_knowledge_base`
 - Phase 7-1 全部完成
 - Phase 7-2 step-1 完成（trace cost 字段已生效）
 - `chat_node` 入口已有 `get_current_run_tree().add_metadata({...})` 那段（Phase 7-1 / Step 4 产物）
+- Agent 仅保留一个实例运行（避免端口漂移导致你观察到的 trace 来自旧进程）
+- 后端 `LANGGRAPH_API_URL` 必须指向当前正在运行的 Agent 地址
 
 ## 任务
 
@@ -34,6 +36,13 @@ Phase 7-2 第二步。在 `chat_node` 内根据上一轮 `search_knowledge_base`
 **把实际找到的"无结果"文案记下来**，待会作为判定关键字。
 
 > 如果找不到工具实现 / 不确定，**保守做法**：把"内容为空字符串"和"长度 < 10 字符"都判为 miss。
+
+### 任务 0.5：先校准观察口径（避免“有 tag 但看错位置”）
+
+1. 验收主口径统一看 **LangSmith Project → Traces**（根 trace，通常 `name=agent`）。
+2. `Runs` 视图主要用于排障，它会显示大量子节点（`chat`、`tools`、`memory_*`），不要拿它当最终验收口径。
+3. 本步骤只在**确实触发 `search_knowledge_base` 工具调用**时才会产生 `rag:*` tag。
+4. 若本轮仅触发记忆链路（`memory_search/chat/memory_save`）而未触发 KB，`rag:*` 不出现是正常行为，不是 bug。
 
 ### 任务 1：在 `chat_node` 入口追加 hit/miss tag 逻辑
 
@@ -80,6 +89,16 @@ def _kb_search_hit_or_miss(state: AgentState) -> str | None:
 
 > `ToolMessage.name` 字段在 LangChain ≥ 0.2 默认填充；如果你那边版本较老导致 `name=''`，可改用 `tool_call_id` → 在 `state.messages` 里反查对应 `AIMessage.tool_calls` 的 `name`。本 prompt 默认 `name` 可用。
 
+#### 改动 1.1-b：补充分数阈值判定（必做）
+
+仅靠“文本非空”会把低质量召回误判为 `hit`。请在判定函数里补充：
+
+- 从工具返回文本提取 `相关度:0.xx`（或 `score:0.xx`）分数
+- 若提取到分数且 `max_score < 0.2`，判为 `miss`
+- 若命中“未找到相关知识”等 miss 文案，同样判为 `miss`
+
+这样类似“查无此人但返回若干 `相关度:0.00`”会稳定落到 `rag:miss`。
+
 #### 改动 1.2：在 `chat_node` 入口 `add_metadata` 那段后追加 `add_tags`
 
 找到 Phase 7-1 / Step 4 已添加的代码：
@@ -104,17 +123,34 @@ def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
             pass
 ```
 
-在这段 try/except 之后**追加**：
+在这段 try/except 之后**追加**（注意：tag 要写到 trace 顶级 run）：
 
 ```python
+def _add_tags_to_trace_root(tags: list[str]) -> None:
+    """把 tag 写到 trace 根 run，确保在 Traces 顶级行可见。"""
+    if not tags or get_current_run_tree is None:
+        return
+    run = get_current_run_tree()
+    if run is None:
+        return
+    run.add_tags(tags)  # 当前 span 也保留，便于排障
+
+    trace_id = getattr(run, 'trace_id', None)
+    client = getattr(run, 'ls_client', None)
+    if trace_id is None or client is None:
+        return
+    root_run = client.read_run(trace_id)
+    existing_tags = list(getattr(root_run, 'tags', []) or [])
+    merged_tags = list(dict.fromkeys(existing_tags + tags))
+    client.update_run(trace_id, tags=merged_tags)
+
+
     # 监控体系 Phase 7-2：根据 search_knowledge_base 工具结果打 rag tag
     if get_current_run_tree is not None:
         try:
             rag_result = _kb_search_hit_or_miss(state)
             if rag_result is not None:
-                run = get_current_run_tree()
-                if run is not None:
-                    run.add_tags([f'rag:{rag_result}'])
+                _add_tags_to_trace_root([f'rag:{rag_result}'])
         except Exception:  # noqa: BLE001
             pass
 ```
@@ -181,6 +217,7 @@ uv run python -c "from src.graph.nodes import chat_node, tool_node_with_retry, _
 
 - **trace 顶部 Tags 区域**应出现：`rag:hit`
 - 展开 span 树 → 点 `tool_node_with_retry` 子 span，**该 span 的 Tags** 也应出现：`rag:hit`
+- 在 Project 列表里切到 `Traces` 视图，`name=agent` 的根 trace 行 `Tags` 列应能看到 `rag:hit`
 
 ### 验证步骤 3：触发 miss 场景
 
@@ -192,7 +229,7 @@ uv run python -c "from src.graph.nodes import chat_node, tool_node_with_retry, _
 
 LangSmith trace 应出现 `rag:miss` tag。
 
-### 验证步骤 4：未调 KB 工具时不打 tag
+### 验证步骤 4：未调 KB 工具时不打 tag（含命中记忆场景）
 
 前端发一条**不会触发知识库工具**的消息：
 
@@ -217,8 +254,13 @@ tags has "rag:hit"
 | 现象 | 原因 | 修复 |
 |---|---|---|
 | LangSmith trace 一直没有 `rag:*` tag | `ToolMessage.name` 为空 | 改用 `tool_call_id` 反查上一条 AIMessage 的 `tool_calls` 找到 name；或在 `_kb_search_hit_or_miss` 中 `print(msg.name, msg.content[:80])` debug |
+| `Runs` 里子节点有 tag，但 `Traces` 根节点看不到 | 验收口径混用了 `Runs` 子节点 | 回到 `Traces` 视图，以 `name=agent` 的根 trace 为准 |
+| `Traces` 根节点仍无 tag，而子节点有 tag | 仅对当前 run 调了 `add_tags`，未同步根 trace run | 用 `trace_id + ls_client.update_run(trace_id, tags=...)` 显式更新根 run |
+| 同一轮只看到 `memory_search/chat/memory_save`，没有 `search_knowledge_base` | 命中了用户长期记忆，模型未调用 KB 工具 | 换成明确依赖知识库的问题（例如“请基于知识库回答：学生管理模块字段有哪些”），再验证 `rag:*` |
+| 明明改了代码但行为不稳定（有时有 tag、有时没有） | 同时运行多个 Agent 进程，后端打到旧端口 | 保持单实例；确认后端 `LANGGRAPH_API_URL` 与当前 Agent 端口一致 |
 | 总是 `rag:miss`（应 hit）| `_KB_MISS_MARKERS` 太宽，把正常结果误判 | 把 `'无相关'`/`'没有相关'` 之类宽匹配关键字去掉，只保留工具实际返回的精确文案 |
 | 总是 `rag:hit`（应 miss）| 工具返回是 `'[]'` 字符串 / 占位文案不在 `_KB_MISS_MARKERS` | 任务 0 重新查工具实现，把实际文案补进去 |
+| “查无此人”被打成 `rag:hit` | 仅按“非空文本”判定，未使用分数阈值 | 提取相关度分数；`max_score < 0.2` 判为 `miss` |
 | trace 根节点 tag 在，但 tool span tag 没在 | 改动 1.3 未做 | 改动 1.3 是可选项，不做不影响验收，但推荐做 |
 | `name` 属性访问报错 | 旧版 langchain-core | 改 `getattr(msg, 'name', '') == 'search_knowledge_base'` 防御（本 prompt 已用此写法）|
 
