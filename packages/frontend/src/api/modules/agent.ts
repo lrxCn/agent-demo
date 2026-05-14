@@ -70,3 +70,16 @@ export async function transcribeAudio(
   const data = unwrapApiData<TranscribeResponse>(body)
   return data.text
 }
+
+/** 反馈请求体；后端在 LangSmith 上对该 run 写 feedback */
+export interface FeedbackPayload {
+  thread_id: string
+  langsmith_run_id: string
+  feedback: 'up' | 'down' | 'note'
+  comment?: string
+}
+
+/** 提交对某条 AI 回复的反馈（依赖 traceparent 拦截器自动注入 trace_id） */
+export async function postFeedback(payload: FeedbackPayload): Promise<void> {
+  await request.post('/agent/feedback', payload)
+}

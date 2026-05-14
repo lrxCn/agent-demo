@@ -11,6 +11,8 @@ export interface ChatMessageItem {
   /** 流式助手消息：接收 token 中为 streaming，结束后为 done */
   streamStatus?: 'streaming' | 'done'
   meta?: { trace_id: string; langsmith_run_id: string }
+  /** 用户反馈状态（监控体系 Phase 7-3） */
+  feedback?: 'up' | 'down' | null
 }
 
 function newId(): string {
@@ -100,6 +102,13 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  function setMessageFeedback(id: string, feedback: 'up' | 'down'): void {
+    const target = messages.value.find((m) => m.id === id)
+    if (target) {
+      target.feedback = feedback
+    }
+  }
+
   return {
     messages,
     currentThreadId,
@@ -115,5 +124,6 @@ export const useChatStore = defineStore('chat', () => {
     setLoading,
     markAssistantStreamEnd,
     setAssistantMeta,
+    setMessageFeedback,
   }
 })

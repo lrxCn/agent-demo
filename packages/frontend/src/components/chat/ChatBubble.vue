@@ -3,6 +3,7 @@ import { Message } from '@arco-design/web-vue'
 import { IconClose, IconMessage, IconSend } from '@arco-design/web-vue/es/icon'
 import MarkdownIt from 'markdown-it'
 import { computed, nextTick, ref, watch } from 'vue'
+import { postFeedback } from '../../api/modules/agent'
 import { useChat } from '../../composables/useChat'
 import { useChatStore } from '../../stores/chat'
 import { getRegisteredToolNames } from '../../composables/useToolRegistry'
@@ -77,6 +78,56 @@ async function onSend(): Promise<void> {
     Message.error(e instanceof Error ? e.message : '发送失败')
   }
 }
+
+async function onFeedback(
+  msgId: string,
+  feedback: 'up' | 'down' | 'note',
+): Promise<void> {
+  const msg = chat.messages.find((m) => m.id === msgId)
+  if (!msg) {
+    return
+  }
+  if (msg.role !== 'assistant') {
+    return
+  }
+  if (!msg.meta?.langsmith_run_id) {
+    Message.warning('该消息缺少 trace 信息（可能是历史消息），无法反馈')
+    return
+  }
+  if (feedback !== 'note' && msg.feedback === feedback) {
+    return
+  }
+
+  let comment: string | undefined
+  if (feedback === 'note') {
+    const text = window.prompt('请输入备注（最多 200 字）：')
+    if (text === null) {
+      return
+    }
+    comment = text.trim().slice(0, 200) || undefined
+    if (!comment) {
+      return
+    }
+  }
+
+  try {
+    await postFeedback({
+      thread_id: chat.currentThreadId ?? '',
+      langsmith_run_id: msg.meta.langsmith_run_id,
+      feedback,
+      ...(comment ? { comment } : {}),
+    })
+    if (feedback !== 'note') {
+      chat.setMessageFeedback(msgId, feedback)
+    }
+    Message.success(
+      feedback === 'up' ? '已反馈：有用' : feedback === 'down' ? '已反馈：需改进' : '备注已提交',
+    )
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '反馈失败'
+    Message.error(m)
+  }
+}
 </script>
 
 <template>
@@ -104,6 +155,36 @@ async function onSend(): Promise<void> {
         >
           <div v-if="m.role === 'assistant'" class="bubble bubble--assistant">
             <div class="bubble-md chat-md" v-html="renderMarkdown(m.content)" />
+            <div v-if="m.meta?.langsmith_run_id" class="bubble-actions">
+              <button
+                type="button"
+                class="action-btn"
+                :class="{ 'action-btn--active': m.feedback === 'up' }"
+                :disabled="m.feedback === 'up'"
+                aria-label="有用"
+                @click="onFeedback(m.id, 'up')"
+              >
+                👍
+              </button>
+              <button
+                type="button"
+                class="action-btn"
+                :class="{ 'action-btn--active': m.feedback === 'down' }"
+                :disabled="m.feedback === 'down'"
+                aria-label="需改进"
+                @click="onFeedback(m.id, 'down')"
+              >
+                👎
+              </button>
+              <button
+                type="button"
+                class="action-btn"
+                aria-label="添加备注"
+                @click="onFeedback(m.id, 'note')"
+              >
+                ✏️
+              </button>
+            </div>
           </div>
           <div v-else class="bubble bubble--user">
             {{ m.content }}
@@ -333,5 +414,40 @@ async function onSend(): Promise<void> {
 .bubble-md :deep(ol) {
   margin: 0.35em 0 0.35em 1.1em;
   padding: 0;
+}
+
+.bubble-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.action-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  color: var(--color-text-2, #94a3b8);
+}
+
+.action-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.action-btn:disabled {
+  cursor: not-allowed;
+}
+
+.action-btn--active {
+  opacity: 1;
+  background: rgba(99, 102, 241, 0.25);
 }
 </style>
