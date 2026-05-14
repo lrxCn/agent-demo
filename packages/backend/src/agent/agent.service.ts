@@ -13,6 +13,7 @@ import { AppGateway } from '../common/gateways/app.gateway';
 import { UserFrontendToolsService } from '../common/gateways/user-frontend-tools.service';
 import { QuotaService } from '../common/quota/quota.service';
 import { ChatDto } from './dto/chat.dto';
+import { ToolAclService } from './tool-acl.service';
 
 /** 下发给前端的 SSE 业务负载（与 API_CONTRACTS 对齐，含 trace / error 便于排错） */
 export type AgentChatStreamPayload =
@@ -36,6 +37,7 @@ export class AgentService {
     private readonly userFrontendTools: UserFrontendToolsService,
     private readonly gateway: AppGateway,
     private readonly quota: QuotaService,
+    private readonly toolAcl: ToolAclService,
   ) {}
 
   /** WebSocket 缓存与请求体中的工具名合并（去重），供 LangGraph 注入前端工具 */
@@ -96,6 +98,25 @@ export class AgentService {
       dto.available_tools,
     );
     const traceId = TraceContext.getTraceId();
+    const allowedBuiltinTools = this.toolAcl.resolveAllowed(user);
+    const deniedTools = this.toolAcl.diff(user, allowedBuiltinTools);
+    if (deniedTools.length > 0) {
+      this.logger.log(
+        JSON.stringify({
+          trace_id: traceId,
+          user_id: user.id,
+          thread_id: threadId,
+          module: 'tool_acl',
+          level: 'info',
+          msg: 'builtin 工具按角色过滤',
+          extra: {
+            allowed: allowedBuiltinTools,
+            denied: deniedTools,
+          },
+        }),
+      );
+    }
+
     this.logger.log(
       JSON.stringify({
         trace_id: traceId,
@@ -122,6 +143,8 @@ export class AgentService {
       user_role_ids: user.roleIds,
       // 监控体系：把 W3C trace_id 传给 Agent 用于 LangSmith metadata
       app_trace_id: traceId,
+      // 监控体系 Phase 7-4 Step 2：按角色过滤的 builtin 工具白名单
+      allowed_builtin_tools: allowedBuiltinTools,
     };
 
     const body = {

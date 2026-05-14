@@ -8,10 +8,11 @@ import { AgentService } from './agent.service';
 import { FeedbackController } from './feedback.controller';
 import { FeedbackService } from './feedback.service';
 import { SttService } from './stt.service';
+import { ToolAclService } from './tool-acl.service';
 
 @Module({
   imports: [HttpModule, WsModule, QuotaModule],
   controllers: [AgentController, FeedbackController],
-  providers: [AgentService, SttService, FeedbackService],
+  providers: [AgentService, SttService, FeedbackService, ToolAclService],
 })
 export class AgentModule {}

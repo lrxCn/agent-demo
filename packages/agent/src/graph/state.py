@@ -17,3 +17,6 @@ class AgentState(TypedDict):
     retrieved_memories: NotRequired[list[str]]
     # 监控体系：来自前端 W3C traceparent 的 32 hex；用于在 LangSmith trace 上打 metadata
     app_trace_id: NotRequired[str]
+    # 监控体系 Phase 7-4 Step 2：后端按角色过滤后的 builtin 工具白名单
+    # 缺失时按"全允许"兜底（向后兼容旧 invoke 调用）
+    allowed_builtin_tools: NotRequired[list[str]]

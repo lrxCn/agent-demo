@@ -230,8 +230,16 @@ def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
         except Exception:  # noqa: BLE001
             # 监控埋点失败不影响主流程
             pass
-    # 内置工具始终加载
-    builtin_tools = registry.get_tools(categories=['builtin'])
+    # 内置工具按"角色白名单"过滤（监控体系 Phase 7-4 Step 2）
+    # state 缺该字段时按"全允许"兜底（CLI / 旧 invoke 不受影响）
+    allowed_builtin = state.get('allowed_builtin_tools')
+    if allowed_builtin is None:
+        builtin_tools = registry.get_tools(categories=['builtin'])
+    else:
+        builtin_tools = registry.get_tools(
+            categories=['builtin'],
+            names=list(allowed_builtin),
+        )
     # 前端工具按当前页面注册的可用列表按需加载
     frontend_tool_names = state.get('available_frontend_tools') or []
     frontend_tools = (
