@@ -64,13 +64,13 @@
 
 ## Phase 7-2：可观测性看板（目标 1，P0）
 
-**整体：⬜ 未开始**（预估 0.5 天，前置依赖 Phase 7-1）
+**整体：✅ 已完成（2026-05-14）**（实际工期 1 天，前置依赖 Phase 7-1）
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
 | 7-2-1 | LangSmith Models 单价配置（4 条记录） | ✅ | 2026-05-14 | 4 条 Models 已配置（`Pro/deepseek-ai/DeepSeek-V3.2` / `Pro/moonshotai/Kimi-K2.6` / `BAAI/bge-large-zh-v1.5` / `BAAI/bge-reranker-v2-m3`）；trace 详情页 Cost 已显示美元金额；`USER_GUIDE.md` 价格快照已沉淀 |
 | 7-2-2 | 业务指标 tag 注入（`rag:hit` / `rag:miss`） | ✅ | 2026-05-14 | `nodes.py` 新增 `_kb_search_hit_or_miss`（含 `tool_call_id` 反查兜底）；`chat_node` 与 `tool_node_with_retry` 均按 KB 返回打 tag；LangSmith Filter 可命中 |
-| 7-2-3 | LangSmith Dashboard 配置（6 个卡片） | ⬜ | | 命名 `plan2code-cost-overview`；URL 沉淀到 `USER_GUIDE.md` |
+| 7-2-3 | LangSmith Dashboard 配置（6 个卡片） | ✅ | 2026-05-14 | 命名 `plan2code-cost-overview`；URL 已沉淀到 `USER_GUIDE.md` |
 
 ---
 
@@ -122,7 +122,7 @@
 | DoD-2 | bad case 入库 | ⬜ | 前端 👎 → 24 秒内 LangSmith Dataset `plan2code-bad-cases-v1` 可见 |
 | DoD-3 | eval 跑分 | ⬜ | `pnpm eval:run --baseline <name>` 输出新旧对比表 |
 | DoD-4 | guardrails 拦截 | ⬜ | 输入 prompt injection → 降级回复 + metadata audit_event + SQLite 新行 |
-| DoD-5 | 成本看板 | ⬜ | LangSmith Dashboard `plan2code-cost-overview` 6 卡片有真实数据 |
+| DoD-5 | 成本看板 | ✅ | LangSmith Dashboard `plan2code-cost-overview` 6 卡片有真实数据 |
 | DoD-6 | Cursor 自动加载 | ⬜ | 新开 Cursor 窗口输入"做 monitor phase-2 step-3"，无需手动 @ |
 
 ---
@@ -140,3 +140,4 @@
 | 日期 | 变更内容 |
 |------|----------|
 | 2026-05-13 | Phase 7-0 启动；`REQUIREMENTS.md` v0.3 READY；`1.PRD.md` / `2.TECH_SELECTION.md` / `3.ARCHITECTURE.md` / `4.ARCHITECTURE_FOR_AI.md` / `PROGRESS.md` 5 份核心文档完成 |
+| 2026-05-14 | Phase 7-2 完成：`7-2-3` 看板配置已完成，`plan2code-cost-overview` 上线并在 `USER_GUIDE.md` 沉淀入口；`DoD-5` 标记为 ✅ |

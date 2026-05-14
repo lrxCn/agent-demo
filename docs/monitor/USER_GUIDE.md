@@ -30,7 +30,7 @@
 | 时长 | 操作 | 期望状态 |
 |---|---|---|
 | 1 min | 打开 LangSmith Web → Projects → `plan2code-agent` | 昨日 trace 数 > 0 且**无 error rate 突增** |
-| 1 min | 切到 Dashboard `plan2code-cost-overview` | 6 张卡片均显示数据；今日 token 趋势平稳 |
+| 1 min | 切到 Dashboard [`plan2code-cost-overview`](https://smith.langchain.com/o/46705a2-734a-4886-b1c9-d2e1e69b3ce0/dashboards) | 6 张卡片均显示数据；今日 token 趋势平稳 |
 | 1 min | 看 Bad case 卡片 | 今日 👎 数量；若 > 5 应当点开看 |
 | 1 min | 终端跑 `sqlite3 packages/backend/data/agent-demo.db "SELECT event_type, COUNT(*) FROM audit_logs WHERE created_at > date('now') GROUP BY event_type;"` | 看是否有异常拦截激增 |
 | 1 min | 浏览器 Console 看前端报错；项目终端看后端 stderr | 无新增报错 |
