@@ -83,7 +83,7 @@
 | 7-3-1 | Eval CLI Runner（P6'） | ✅ | 2026-05-14 | `src/eval/runner.py` + 3 个 evaluators + 2 个 `__init__`；`pyproject.toml` 增加 `langsmith`/`ragas` 与 `[project.scripts] eval`；根 `package.json` 增加 `eval:run`；`.env.example` 增加 `OPENAI_LLM_AS_JUDGE` 与 3 个 `LANGSMITH_DATASET_*` |
 | 7-3-2 | 前端反馈 UI（P3） | ✅ | 2026-05-14 | `ChatBubble.vue` 三按钮 + `postFeedback` API + `chat` store `setMessageFeedback`；点击已发起 POST（Step 3 前预期 404） |
 | 7-3-3 | 后端反馈接口 + LangSmith REST（P6） | ✅ | 2026-05-14 | `feedback.controller` + `feedback.service`；`POST /agent/feedback` 转发 LangSmith `/feedback` + `PATCH /runs/{id}` tag；前端三按钮联调可用 |
-| 7-3-4 | Dataset 自动路由 | ⬜ | | 按 trace 中 tool_calls 类型路由到 3 个 dataset |
+| 7-3-4 | Dataset 自动路由 | ✅ | 2026-05-14 | `feedback.service.ts` 新增 `fetchRun/routeDataset/ensureDataset/addRunToDataset`；按 tags 路由 3 个 dataset；`down` 反馈自动入库 |
 | 7-3-5 | Eval `--baseline` 跑分对比 | ⬜ | | `runner.py` 加 `--baseline` 参数；终端输出 diff 表（DoD-3） |
 
 ---

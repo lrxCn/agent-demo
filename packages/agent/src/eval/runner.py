@@ -148,7 +148,11 @@ def run_eval(dataset_name: str, limit: int | None = None) -> dict[str, Any]:
 
 def cli() -> None:
     parser = argparse.ArgumentParser(description='plan2code eval runner')
-    parser.add_argument('--dataset', required=True, help='LangSmith dataset 名称')
+    parser.add_argument(
+        '--dataset',
+        required=True,
+        help='LangSmith dataset 名（可用别名 bad/rag/tool）',
+    )
     parser.add_argument('--limit', type=int, default=None, help='只跑前 N 条（调试用）')
     parser.add_argument(
         '--baseline',
@@ -160,9 +164,15 @@ def cli() -> None:
     if argv and argv[0] == '--':
         argv = argv[1:]
     args = parser.parse_args(argv)
+    alias_map = {
+        'bad': os.environ.get('LANGSMITH_DATASET_BAD_CASES', 'plan2code-bad-cases-v1'),
+        'rag': os.environ.get('LANGSMITH_DATASET_RAG_CASES', 'plan2code-rag-cases-v1'),
+        'tool': os.environ.get('LANGSMITH_DATASET_TOOL_CASES', 'plan2code-tool-cases-v1'),
+    }
+    dataset_name = alias_map.get(args.dataset, args.dataset)
     if args.baseline:
         print('NOTE: --baseline 将在 Step 5 实现；本次忽略', file=sys.stderr)
-    run_eval(args.dataset, args.limit)
+    run_eval(dataset_name, args.limit)
 
 
 if __name__ == '__main__':

@@ -13,11 +13,176 @@ interface LangSmithFeedbackPayload {
   comment?: string;
 }
 
+interface LangSmithRunDetail {
+  tags: string[];
+  inputs: Record<string, unknown>;
+  outputs: Record<string, unknown>;
+  trace_id?: string;
+}
+
 @Injectable()
 export class FeedbackService {
   private readonly logger = new Logger(FeedbackService.name);
 
   constructor(private readonly config: ConfigService) {}
+
+  /** 读 LangSmith Run 的 tags / inputs / outputs / 父 trace_id，路由 dataset 用 */
+  private async fetchRun(runId: string): Promise<LangSmithRunDetail | null> {
+    const apiKey = this.config.get<string>('LANGSMITH_API_KEY');
+    const endpoint = this.config.get<string>(
+      'LANGCHAIN_ENDPOINT',
+      'https://api.smith.langchain.com',
+    );
+    if (!apiKey) {
+      return null;
+    }
+    try {
+      const resp = await fetch(`${endpoint.replace(/\/$/, '')}/runs/${runId}`, {
+        method: 'GET',
+        headers: { 'x-api-key': apiKey },
+      });
+      if (!resp.ok) {
+        this.logger.warn(`LangSmith GET /runs/${runId} 失败 status=${resp.status}`);
+        return null;
+      }
+      const data = (await resp.json()) as Record<string, unknown>;
+      const tags = Array.isArray(data.tags)
+        ? data.tags.filter((t): t is string => typeof t === 'string')
+        : [];
+      const inputs =
+        typeof data.inputs === 'object' && data.inputs !== null
+          ? (data.inputs as Record<string, unknown>)
+          : {};
+      const outputs =
+        typeof data.outputs === 'object' && data.outputs !== null
+          ? (data.outputs as Record<string, unknown>)
+          : {};
+      const traceId = typeof data.trace_id === 'string' ? data.trace_id : undefined;
+      return { tags, inputs, outputs, trace_id: traceId };
+    } catch (e) {
+      this.logger.warn(`fetchRun 异常: ${(e as Error).message}`);
+      return null;
+    }
+  }
+
+  /** 按 tags 路由到 dataset 名称（最后 fallback 到 bad_cases） */
+  private routeDataset(tags: string[]): string {
+    if (tags.includes('rag:miss')) {
+      return (
+        this.config.get<string>('LANGSMITH_DATASET_RAG_CASES') ||
+        'plan2code-rag-cases-v1'
+      );
+    }
+    if (tags.some((t) => t.startsWith('tool:') || t.startsWith('tool_'))) {
+      return (
+        this.config.get<string>('LANGSMITH_DATASET_TOOL_CASES') ||
+        'plan2code-tool-cases-v1'
+      );
+    }
+    return (
+      this.config.get<string>('LANGSMITH_DATASET_BAD_CASES') ||
+      'plan2code-bad-cases-v1'
+    );
+  }
+
+  /** dataset 不存在时自动创建并返回 id；存在时返回已有 id */
+  private async ensureDataset(name: string): Promise<string | null> {
+    const apiKey = this.config.get<string>('LANGSMITH_API_KEY');
+    const endpoint = this.config.get<string>(
+      'LANGCHAIN_ENDPOINT',
+      'https://api.smith.langchain.com',
+    );
+    if (!apiKey) {
+      return null;
+    }
+    try {
+      const listResp = await fetch(
+        `${endpoint.replace(/\/$/, '')}/datasets?name=${encodeURIComponent(name)}`,
+        { method: 'GET', headers: { 'x-api-key': apiKey } },
+      );
+      if (listResp.ok) {
+        const listData = (await listResp.json()) as unknown;
+        const list = Array.isArray(listData)
+          ? listData
+          : Array.isArray((listData as { datasets?: unknown[] })?.datasets)
+            ? ((listData as { datasets: unknown[] }).datasets ?? [])
+            : [];
+        const first = list[0] as { id?: string } | undefined;
+        if (first?.id) {
+          return first.id;
+        }
+      }
+
+      const createResp = await fetch(`${endpoint.replace(/\/$/, '')}/datasets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          name,
+          description: 'plan2code 自动收集的 bad case（用户 👎 反馈）',
+        }),
+      });
+      if (!createResp.ok) {
+        this.logger.warn(
+          `LangSmith 创建 dataset=${name} 失败 status=${createResp.status}`,
+        );
+        return null;
+      }
+      const created = (await createResp.json()) as { id?: string };
+      return created.id ?? null;
+    } catch (e) {
+      this.logger.warn(`ensureDataset 异常: ${(e as Error).message}`);
+      return null;
+    }
+  }
+
+  /** 把 run 转成 dataset example 并 POST 进去 */
+  private async addRunToDataset(
+    datasetId: string,
+    runDetail: LangSmithRunDetail,
+    feedbackComment: string | undefined,
+  ): Promise<void> {
+    const apiKey = this.config.get<string>('LANGSMITH_API_KEY');
+    const endpoint = this.config.get<string>(
+      'LANGCHAIN_ENDPOINT',
+      'https://api.smith.langchain.com',
+    );
+    if (!apiKey) {
+      return;
+    }
+    const example = {
+      inputs: runDetail.inputs,
+      outputs: runDetail.outputs,
+      metadata: {
+        source: 'user_thumb_down',
+        tags: runDetail.tags,
+        feedback_comment: feedbackComment ?? '',
+      },
+    };
+    try {
+      const resp = await fetch(
+        `${endpoint.replace(/\/$/, '')}/datasets/${datasetId}/examples`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+          },
+          body: JSON.stringify(example),
+        },
+      );
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        this.logger.warn(
+          `LangSmith POST dataset example 失败 status=${resp.status} body=${text}`,
+        );
+      }
+    } catch (e) {
+      this.logger.warn(`addRunToDataset 异常: ${(e as Error).message}`);
+    }
+  }
 
   async submit(dto: FeedbackDto, user: JwtUser): Promise<void> {
     const apiKey = this.config.get<string>('LANGSMITH_API_KEY');
@@ -101,6 +266,36 @@ export class FeedbackService {
           this.logger.warn(
             `LangSmith /runs/${dto.langsmith_run_id} PATCH tag 失败 status=${tagsResp.status} body=${text}`,
           );
+        }
+      }
+
+      // 监控体系 Phase 7-3 Step 4：down 反馈 → 自动路由到 dataset
+      if (dto.feedback === 'down') {
+        try {
+          const runDetail = await this.fetchRun(dto.langsmith_run_id);
+          if (runDetail) {
+            const datasetName = this.routeDataset(runDetail.tags);
+            const datasetId = await this.ensureDataset(datasetName);
+            if (datasetId) {
+              await this.addRunToDataset(datasetId, runDetail, dto.comment);
+              this.logger.log(
+                JSON.stringify({
+                  trace_id: TraceContext.getTraceId(),
+                  user_id: user.id,
+                  module: 'feedback',
+                  level: 'info',
+                  msg: 'bad case 已加入 dataset',
+                  extra: {
+                    run_id: dto.langsmith_run_id,
+                    dataset: datasetName,
+                  },
+                }),
+              );
+            }
+          }
+        } catch (e) {
+          // dataset 自动路由软失败，不影响主流程反馈成功返回
+          this.logger.warn(`dataset 自动路由异常: ${(e as Error).message}`);
         }
       }
     } catch (e) {
