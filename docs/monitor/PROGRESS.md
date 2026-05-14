@@ -68,7 +68,7 @@
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
-| 7-2-1 | LangSmith Models 单价配置（4 条记录） | ⬜ | | `DeepSeek-V4-Flash` / `Pro/moonshotai/Kimi-K2.6` / `bge-large-zh-v1.5` / `bge-reranker-v2-m3`；数字按 ¥ 折算 |
+| 7-2-1 | LangSmith Models 单价配置（4 条记录） | ✅ | 2026-05-14 | 4 条 Models 已配置（`Pro/deepseek-ai/DeepSeek-V3.2` / `Pro/moonshotai/Kimi-K2.6` / `BAAI/bge-large-zh-v1.5` / `BAAI/bge-reranker-v2-m3`）；trace 详情页 Cost 已显示美元金额；`USER_GUIDE.md` 价格快照已沉淀 |
 | 7-2-2 | 业务指标 tag 注入（`rag:hit` / `rag:miss`） | ⬜ | | `nodes.py chat_node` 调用 `search_knowledge_base` 后按返回结果空非空打 tag |
 | 7-2-3 | LangSmith Dashboard 配置（6 个卡片） | ⬜ | | 命名 `plan2code-cost-overview`；URL 沉淀到 `USER_GUIDE.md` |
 

@@ -299,26 +299,30 @@ LangSmith Dashboard `plan2code-cost-overview` 的 6 张卡片：
 
 ## 7. SiliconFlow 当前价格快照（LangSmith Models 配置参考）
 
-> 价格随时变动。**配置前请先去 https://siliconflow.cn/pricing 核对最新值**。本表为 2026-05-13 的快照，**仅供数量级参考**。
+> 价格随时变动。配置前请先去 https://siliconflow.cn/pricing 核对最新值。
 >
-> LangSmith 要求单价以"每 1 token"为单位（USD 等值数字格式 `0.0000003` 等）。本表先给"每 1M token 的 ¥ 价"，再换算给"每 1 token 的数字"。**数字直接按 ¥ 解读**（不做汇率换算）。
+> 本表为 2026-05-14 查询快照。汇率按 `¥->USD = 6.7832`，换算口径：
+> `LangSmith 单价(USD/token) = ¥/M tokens / 1_000_000 / 6.7832`。
+>
+> 注意：LangSmith `Model pricing` 页面实际录入的是 `USD / 1M tokens`。因此表中同时保留
+> `USD/token`（用于审计复核）和 `USD/1M`（用于 UI 录入）两列。
 
-| 模型 | 用途 | 每 1M input tokens | 每 1M output tokens | 填到 LangSmith 的 input 数字 | 填到 LangSmith 的 output 数字 |
-|---|---|---|---|---|---|
-| `deepseek-ai/DeepSeek-V4-Flash` | 主对话 | 待查 SiliconFlow | 待查 | 待查 / 1_000_000 | 待查 / 1_000_000 |
-| `Pro/moonshotai/Kimi-K2.6` | LLM-as-judge | 待查 | 待查 | 待查 / 1_000_000 | 待查 / 1_000_000 |
-| `BAAI/bge-large-zh-v1.5` | embedding | 待查 | 0 | 待查 / 1_000_000 | 0 |
-| `BAAI/bge-reranker-v2-m3` | rerank | 待查 | 0 | 待查 / 1_000_000 | 0 |
+| 模型 | 用途 | 输入（¥/M tokens） | 输出（¥/M tokens） | LangSmith Prompt（USD/token） | LangSmith Completion（USD/token） | LangSmith Prompt（USD/1M） | LangSmith Completion（USD/1M） |
+|---|---|---|---|---|---|---|---|
+| `Pro/deepseek-ai/DeepSeek-V3.2` | 主对话 | 2 | 3 | 0.0000002948 | 0.0000004422 | 0.2948 | 0.4422 |
+| `Pro/moonshotai/Kimi-K2.6` | LLM-as-judge | 6.5 | 27 | 0.0000009582 | 0.0000039802 | 0.9582 | 3.9802 |
+| `BAAI/bge-large-zh-v1.5` | embedding | 0 | 0 | 0 | 0 | 0 | 0 |
+| `BAAI/bge-reranker-v2-m3` | rerank | 0 | 0 | 0 | 0 | 0 | 0 |
 
-> **填写时请把"待查"替换为 SiliconFlow 公布的实际数字**。建议第一次配置时把表格留作"我项目的快照"，下次价格变动时再来对照修订。
+> 配置时请确保 LangSmith `Model Name / Match Pattern` 与运行时模型字符串严格一致，避免 cost 回落为 `--` 或 `0`。
 
 ### 7.1 配置步骤
 
 1. 登录 LangSmith Web
 2. 右上角头像 → Settings
 3. 左侧菜单 → Models
-4. 点 "Add Model" → 输入 4 项（仅 `Model Name`、`Input Price`、`Output Price`，`Provider` 选 `OpenAI`，因为 SiliconFlow 走 OpenAI 兼容协议）
-5. **Model Name 必须与 `OPENAI_MODEL_NAME` 完全一致**（包括前缀 `deepseek-ai/`），否则 LangSmith 匹配不上
+4. 点 "Add Model" → 输入 4 项（`Model Name`、`Input Price`、`Output Price`、`Provider`；`Provider` 选 `openai`，因为 SiliconFlow 走 OpenAI 兼容协议）
+5. `Model Name` 或 `Match Pattern` 必须与实际模型字符串完全一致（如 `Pro/deepseek-ai/DeepSeek-V3.2`），否则 LangSmith 匹配不上
 
 ### 7.2 验证配置生效
 
