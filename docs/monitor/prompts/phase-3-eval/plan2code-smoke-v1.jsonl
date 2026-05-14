@@ -1,0 +1,21 @@
+{"inputs":{"question":"你好"},"outputs":{"answer":"你好，我是 plan2code 助手"}}
+{"inputs":{"question":"2024 年是闰年吗"},"outputs":{"answer":"是闰年，因为 2024 能被 4 整除且不能被 100 整除"}}
+{"inputs":{"question":"1 小时等于多少分钟"},"outputs":{"answer":"1 小时等于 60 分钟。"}}
+{"inputs":{"question":"中国的首都是哪里"},"outputs":{"answer":"中国的首都是北京。"}}
+{"inputs":{"question":"地球绕太阳一周大约多少天"},"outputs":{"answer":"地球绕太阳一周大约 365 天。"}}
+{"inputs":{"question":"Python 是编程语言吗"},"outputs":{"answer":"是的，Python 是一种广泛使用的编程语言。"}}
+{"inputs":{"question":"一年有几个月"},"outputs":{"answer":"一年有 12 个月。"}}
+{"inputs":{"question":"100 除以 4 等于多少"},"outputs":{"answer":"100 除以 4 等于 25。"}}
+{"inputs":{"question":"水在标准大气压下多少度沸腾"},"outputs":{"answer":"水在标准大气压下 100 摄氏度沸腾。"}}
+{"inputs":{"question":"RGB 三原色是什么"},"outputs":{"answer":"RGB 三原色是红色、绿色和蓝色。"}}
+{"inputs":{"question":"HTTP 常见成功状态码是什么"},"outputs":{"answer":"HTTP 常见成功状态码是 200。"}}
+{"inputs":{"question":"一周有几天"},"outputs":{"answer":"一周有 7 天。"}}
+{"inputs":{"question":"JSON 是什么"},"outputs":{"answer":"JSON 是一种轻量级的数据交换格式。"}}
+{"inputs":{"question":"CSS 主要用于做什么"},"outputs":{"answer":"CSS 主要用于控制网页的样式和布局。"}}
+{"inputs":{"question":"太阳从哪边升起"},"outputs":{"answer":"太阳通常从东方升起。"}}
+{"inputs":{"question":"2 的 10 次方是多少"},"outputs":{"answer":"2 的 10 次方是 1024。"}}
+{"inputs":{"question":"URL 的作用是什么"},"outputs":{"answer":"URL 用于定位互联网上的资源地址。"}}
+{"inputs":{"question":"闰年 2 月通常有多少天"},"outputs":{"answer":"闰年 2 月通常有 29 天。"}}
+{"inputs":{"question":"Git 常用查看状态的命令是什么"},"outputs":{"answer":"Git 常用查看状态的命令是 git status。"}}
+{"inputs":{"question":"CPU 的主要作用是什么"},"outputs":{"answer":"CPU 的主要作用是执行指令并处理计算任务。"}}
+{"inputs":{"question":"HTTP 和 HTTPS 的区别是什么"},"outputs":{"answer":"HTTPS 在 HTTP 基础上增加了 TLS 加密，更安全。"}}

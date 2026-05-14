@@ -76,19 +76,18 @@ touch packages/agent/src/eval/evaluators/__init__.py
 为什么用独立模型：避免"裁判员=运动员"偏差，让主链路 DeepSeek-V4-Flash 的输出
 由另一个家族的强模型评分。
 """
-import os
 from typing import Any
 
 from langchain_openai import ChatOpenAI
+from src.config import settings
 
 
 def _judge_llm() -> ChatOpenAI:
     """构造评估专用 LLM（独立模型名，但共用 base_url / api_key）"""
-    model = os.environ.get('OPENAI_LLM_AS_JUDGE', 'Pro/moonshotai/Kimi-K2.6')
     return ChatOpenAI(
-        model=model,
-        base_url=os.environ['OPENAI_BASE_URL'],
-        api_key=os.environ['OPENAI_API_KEY'],
+        model=settings.OPENAI_LLM_AS_JUDGE,
+        base_url=settings.OPENAI_BASE_URL,
+        api_key=settings.OPENAI_API_KEY,
         temperature=0,
     )
 
@@ -356,9 +355,7 @@ ALL_EVALUATORS = [
 def _build_target_app() -> Any:
     """构造可被 LangSmith Client.evaluate() 调用的 target：(inputs: dict) -> dict"""
     # 复用 plan2code 主图（与 langgraph dev 一致）
-    from src.graph.builder import build_graph
-
-    graph = build_graph()
+    from src.graph.builder import graph
 
     def _target(inputs: dict[str, Any]) -> dict[str, Any]:
         message = inputs.get('question') or inputs.get('message') or ''
@@ -444,13 +441,15 @@ def run_eval(dataset_name: str, limit: int | None = None) -> dict[str, Any]:
     project_name = (
         os.environ.get('LANGCHAIN_PROJECT', 'plan2code-agent') + '-eval'
     )
+    eval_data: Any = dataset_name
+    if limit is not None:
+        eval_data = list(client.list_examples(dataset_name=dataset_name, limit=limit))
     print(f'>>> 运行 eval: dataset={dataset_name} limit={limit} project={project_name}')
     results = client.evaluate(
         target,
-        data=dataset_name,
+        data=eval_data,
         evaluators=ALL_EVALUATORS,
         experiment_prefix='plan2code-eval',
-        max_examples=limit,
     )
     summary = _aggregate_results(results)
     print('\n>>> 评估完成 (results 已上报 LangSmith Experiments)')
@@ -524,7 +523,8 @@ uv run eval --help
 
 1. 打开 https://smith.langchain.com → 左侧 **Datasets** → `+ New Dataset`
 2. Name: `plan2code-smoke-v1`
-3. 在 dataset 详情页点 `+ New Example`，**添加 2 条**：
+3. 在 dataset 详情页点 `+ New Example`，**添加 2 条**；或直接用 `Upload from file` 上传：
+   `docs/monitor/prompts/phase-3-eval/plan2code-smoke-v1.jsonl`
 
 | Example 1 输入 | 输出 |
 |---|---|

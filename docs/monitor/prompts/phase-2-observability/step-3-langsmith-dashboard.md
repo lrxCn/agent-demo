@@ -186,10 +186,10 @@ Phase 7-2 收尾步骤。**不写代码**，全部在 LangSmith Web 端配置一
 **整体：✅ 已完成（<今天日期>）**（实际工期 X 天）
 ```
 
-#### DoD-2 标 ✅
+#### DoD-5 标 ✅
 
 ```
-| DoD-2 | 看板可用 | ✅ | LangSmith Dashboard 6 卡片均有数据；URL 沉淀 |
+| DoD-5 | 成本看板 | ✅ | LangSmith Dashboard `plan2code-cost-overview` 6 卡片均有数据；URL 已沉淀 |
 ```
 
 ### git commit

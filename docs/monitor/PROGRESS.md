@@ -80,7 +80,7 @@
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
-| 7-3-1 | Eval CLI Runner（P6'） | ⬜ | | `agent/src/eval/runner.py` + 3 个 evaluators；`pyproject.toml [project.scripts]`；根 `package.json` 加 `eval:run`；**同步更新 `.env.example`** 加入 `OPENAI_LLM_AS_JUDGE` |
+| 7-3-1 | Eval CLI Runner（P6'） | ✅ | 2026-05-14 | `src/eval/runner.py` + 3 个 evaluators + 2 个 `__init__`；`pyproject.toml` 增加 `langsmith`/`ragas` 与 `[project.scripts] eval`；根 `package.json` 增加 `eval:run`；`.env.example` 增加 `OPENAI_LLM_AS_JUDGE` 与 3 个 `LANGSMITH_DATASET_*` |
 | 7-3-2 | 前端反馈 UI（P3） | ⬜ | | `ChatBubble.vue` 三按钮；`api/modules/agent.ts` 加 `postFeedback` |
 | 7-3-3 | 后端反馈接口 + LangSmith REST（P6） | ⬜ | | `feedback.controller.ts` + `feedback.service.ts`；新增权限 `agent:feedback` |
 | 7-3-4 | Dataset 自动路由 | ⬜ | | 按 trace 中 tool_calls 类型路由到 3 个 dataset |

@@ -9,6 +9,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '.en
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 OPENAI_BASE_URL = os.getenv('OPENAI_BASE_URL', 'https://api.siliconflow.cn/v1')
 OPENAI_MODEL_NAME = os.getenv('OPENAI_MODEL_NAME', 'deepseek-ai/DeepSeek-V3.2')
+OPENAI_LLM_AS_JUDGE = os.getenv('OPENAI_LLM_AS_JUDGE', 'Pro/moonshotai/Kimi-K2.6')
 
 # Redis 配置
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
