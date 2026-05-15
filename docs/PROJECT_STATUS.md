@@ -133,7 +133,7 @@
 | 步骤 | 描述 | 状态 | 详细文档 |
 |------|------|------|----------|
 | 8-1 | State 字段 + 环境变量回滚开关 | ✅ | `@prompts/phase-8/step-1-state-and-flag.md` |
-| 8-2 | 意图路由 `intent_router`（规则法 + 单测） | ⬜ | `@prompts/phase-8/step-2-intent-router.md` |
+| 8-2 | 意图路由 `intent_router`（规则法 + 单测） | ✅ | `@prompts/phase-8/step-2-intent-router.md` |
 | 8-3 | RAG 强制检索节点 `kb_query_node` | ⬜ | `@prompts/phase-8/step-3-kb-query-node.md` |
 | 8-4 | builder 接线 + `chat_node` 消费 forced_kb | ⬜ | `@prompts/phase-8/step-4-builder-and-chat.md` |
 | 8-5 | LangSmith metadata/tags + 三组回归 | ⬜ | `@prompts/phase-8/step-5-trace-and-regression.md` |
@@ -203,3 +203,4 @@
 | 2026-05-15 | Agent 节点护栏方案试点：新增 `graph/guards.py` 的 `node_timeout_guard` 装饰器，并接入 `memory_search_node`（3 秒超时后 fallback 空记忆，降级继续）。 |
 | 2026-05-15 | Phase 8 文档产出：`docs/AGENT_RAG_ROUTING_PLAN_B_REQUIREMENTS/ARCHITECTURE/PROGRESS/HOW_TO_USE` 四份文档 + `prompts/phase-8/step-1 ~ step-5` 五个原子 prompt + `.cursor/rules/06-rag-routing-context.mdc` 自动加载规则 + `.cursorrules` 追加 Phase 8 段；等待 8-1 ~ 8-5 实施。 |
 | 2026-05-15 | Phase 8 Step 8-1 执行完成：`state.py` 新增 `intent_route` / `forced_kb_results`（NotRequired），`settings.py` 新增 `AGENT_RAG_ROUTER_ENABLED`（默认 true），`.env.example` 增开关示例，并同步更新 `docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`。 |
+| 2026-05-15 | Phase 8 Step 8-2 执行完成：新增 `src/graph/intent_router.py`（规则法：信息查询优先于导航）；新增 `tests/graph/test_intent_router.py` 并通过 18 个断言；同步更新 `docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`。 |
