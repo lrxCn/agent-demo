@@ -1,0 +1,115 @@
+---
+description: Agent RAG 路由方案 B（Phase 8）上下文加载规则
+globs: "docs/AGENT_RAG_ROUTING_PLAN_B_*.md,prompts/phase-8/**/*.md,packages/agent/src/graph/intent_router.py,packages/agent/src/graph/kb_query_node.py,packages/agent/tests/graph/test_intent_router.py,packages/agent/tests/graph/test_kb_query_node.py"
+alwaysApply: false
+---
+
+# Agent RAG 路由方案 B 规则（Phase 8）
+
+## 触发条件
+
+当用户提到下列任何一个关键词，或正在编辑上面 `globs` 匹配的文件时，必须**先**读必读上下文：
+
+- "RAG 路由 / 路由方案 B / 方案 B / Plan B / intent router / 意图路由"
+- "kb_query / kb_query_node / 强制检索 / forced_kb / forced_kb_results"
+- "AGENT_RAG_ROUTER_ENABLED / 路由开关 / 回滚开关"
+- "未检索先导航 / 信息查询不走 RAG"
+- 任何 `@docs/AGENT_RAG_ROUTING_PLAN_B_*.md` 或 `@prompts/phase-8/**` 引用
+
+## 必读上下文（按优先级）
+
+1. **元需求 / 验收**：`@docs/AGENT_RAG_ROUTING_PLAN_B_REQUIREMENTS.md`（§4 功能需求 / §6 验收标准）
+2. **当前进度（接力棒）**：`@docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`
+3. **架构（图改造前后对比 + 不在本期范围）**：`@docs/AGENT_RAG_ROUTING_PLAN_B_ARCHITECTURE.md`（§3 图结构 / §6 节点行为契约 / §9 不在本期范围）
+4. **使用指南**：`@docs/AGENT_RAG_ROUTING_PLAN_B_HOW_TO_USE.md`（接力 / 回滚 / FAQ）
+5. **当前在执行的 prompt**：`@prompts/phase-8/step-N-*.md`（用户应当显式 @-指定）
+
+## 工作流程
+
+### 会话开场仪式（本规则被首次触发时**必做**）
+
+当用户首条消息满足以下**任意一条**：
+
+- 含本规则任意关键词（"RAG 路由 / 方案 B / intent_router / kb_query / forced_kb / Phase 8 / AGENT_RAG_ROUTER_ENABLED" 等）
+- 是简单的开场词（"开始 / 继续 / 接着干 / hi / 下一步"）且会话上下文已加载本规则
+- @-引用了 `docs/AGENT_RAG_ROUTING_PLAN_B_*.md` 或 `prompts/phase-8/**`
+
+**立即按顺序自动加载（不要反问用户是否需要）：**
+
+1. `@docs/AGENT_RAG_ROUTING_PLAN_B_REQUIREMENTS.md`（元需求 + 验收）
+2. `@docs/AGENT_RAG_ROUTING_PLAN_B_ARCHITECTURE.md`（图改造 + 不在本期范围）
+3. `@docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`（接力棒，找下一个 ⬜ step）
+
+**然后用一段话报告：**
+
+```
+✅ Phase 8 上下文已加载。
+当前进度：8-1 ⬜  8-2 ⬜  8-3 ⬜  8-4 ⬜  8-5 ⬜（按 PROGRESS 实际状态填）
+下一步建议：执行 8-N，对应 prompt：@prompts/phase-8/step-N-*.md
+请确认后我再开始执行；或你也可以直接 @-粘贴该 prompt 文件让我立即开始。
+```
+
+> 这一仪式只在**首条消息**做一次；之后正常按下面的工作流程走，不要重复读这三份文档。
+
+### 接到"RAG 路由相关任务"时（开场之后）
+
+1. **如果用户给了具体 prompt 文件** → 严格按 `step-N-*.md` 的"任务"段执行，**不擅自扩张范围**
+2. **如果用户只说"开始"或"下一步"** → 直接执行 PROGRESS 里下一个 ⬜ step 对应的 prompt（**不需要再次反问**）
+3. **执行完一个 step** → 必须按 prompt 末尾的"完成后"段更新 `AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`，并给出 git commit 命令（**不要自己 commit**）
+4. **遇到不确定** → 反问，不擅自做决策；尤其涉及 ARCHITECTURE §9「不在本期范围」时
+
+## 常见禁区（来自 ARCHITECTURE §9）
+
+| 不要做 | 替代方案 |
+|---|---|
+| 训练意图分类小模型 / 接 BERT | v1 用规则法（关键词 + 句式）即可命中 KPI |
+| 修改 `search_knowledge_base` 工具 schema 把 `role_ids` 移除 | 工具仍保留对外能力，图层多一条强制路径 |
+| 重构 `tool_node_with_retry` / `after_tools` / `fallback_node` | 主循环稳定，禁止动 |
+| 引入新依赖（jieba / pkuseg 等分词库） | 中文 `in` 字符串匹配对 v1 已足够 |
+| 修改前端 / 后端 API 契约 | 本期是纯 Agent 图层改造，前后端零感知 |
+| 新增 LangSmith Dashboard 卡片 | 用 Phase 7-2 已建看板的 Filter（`tags has "route:intent=kb_query"`）即可 |
+| 把 `intent_route` / `forced_kb_results` 改成 Required | 必须保持 `NotRequired`，否则旧 invoke / CLI 报错 |
+| 在 `kb_query_node` / `intent_router` 重复打 `rag:hit\|miss` tag | 沿用 Phase 7-2-2 在 `chat_node` / `tool_node_with_retry` 的逻辑 |
+
+## 编码约定
+
+### 图层
+
+- `intent_router` 必须是**路由函数**（返回 str），**不写 state**
+- `kb_query_node` 是**图节点**（返回 dict 写 state），必须用 `@node_timeout_guard`（10s）兜底
+- 任何新节点的失败 / 空结果都要软失败，**不阻塞主流程**
+- `builder.py` 必须按 `AGENT_RAG_ROUTER_ENABLED` 切换新/旧图，回滚开关不可省
+
+### 状态
+
+- 新字段一律 `NotRequired[...]`，向下兼容旧 invoke / `pnpm dev:agentLocal` / `langgraph dev`
+- 角色权限统一从 `state.user_role_ids` 注入（与 `tool_node_with_retry` 中 `search_knowledge_base` 的注入路径一致）
+
+### 可观测性
+
+- trace tag 命名规范：`route:intent=kb_query|chat_direct` + `route:kb_forced=true|false`
+- 在 `chat_node` 入口用 `_add_tags_to_trace_root([...])` 打**根 trace** tag
+- 在 `kb_query_node` 内只用 `run.add_tags([...])` 打**当前 span** tag（避免根 trace 重复）
+- LangSmith Filter 速查：`tags has "route:intent=kb_query" AND tags has "rag:miss"` → 候选关键字需扩充或知识库需补料
+
+### 测试
+
+- `intent_router` 单测必须覆盖：信息查询 hit / 明确导航 chat_direct / 同时命中（kb_query 优先）/ 兜底 / 空消息
+- `kb_query_node` 单测必须 mock `search_knowledge`，覆盖：成功 / 空角色 / 无 HumanMessage / 异常吞掉 / 超时降级 / role_ids 透传
+
+## 自我检查清单（每次完成 step 后过一遍）
+
+- [ ] 是否破坏了 Phase 0 ~ 7 已完成的代码？（应当为 No）
+- [ ] 是否引入了新依赖？（本期应当为 No）
+- [ ] 是否触动 ARCHITECTURE §9 不做清单中的任意一项？（应当为 No）
+- [ ] `AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md` 是否已更新？
+- [ ] 新增 / 修改的 state 字段是否仍为 `NotRequired`？
+- [ ] 是否同时改动了 `packages/backend` 或 `packages/frontend`？（应当为 No；本期纯 Agent 改造）
+- [ ] git commit message 是否含 `ref: docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md 8-N`？
+
+## 与 Phase 7 监控体系的关系
+
+- 复用 Phase 7-1 的 `app_trace_id` / `add_metadata` 机制
+- 复用 Phase 7-2 的 `_add_tags_to_trace_root()` / `rag:hit|miss` 逻辑
+- 不修改 Phase 7-3（eval）/ 7-4（guardrails）/ 7-5（cost playbook）任何代码
+- Guardrails（quota / tool_acl / prompt_injection / pii_filtered）四类事件仍按现有逻辑工作（与本期正交）

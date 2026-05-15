@@ -41,3 +41,13 @@
 - **trace_id 体系**：W3C Trace Context 标准；前端 axios/fetch 注入 `traceparent` header；后端 `TraceContext`（AsyncLocalStorage）；Agent 通过 `state.app_trace_id` 传递并打到 LangSmith metadata。**禁止**自定义 trace_id 格式。
 - **prompt 范式**：分步实施 prompt 在 `docs/monitor/prompts/phase-N-*/step-M-*.md`，**一次只执行一个 step**；每个 step 完成后必须更新 `docs/monitor/PROGRESS.md`。
 - **不擅自扩张**：监控代码仅放在 `packages/{backend,agent}/src/**/{quota,audit,guardrails,context,eval}` 等新子目录下，**不重构** Phase 0~6 已稳定的代码。
+
+# Agent RAG 路由方案 B（Phase 8）
+- **路由相关任务**（含关键词 "RAG 路由 / 方案 B / intent_router / kb_query_node / forced_kb_results / AGENT_RAG_ROUTER_ENABLED / 未检索先导航"）必须先读 `@docs/AGENT_RAG_ROUTING_PLAN_B_REQUIREMENTS.md` 与 `@docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`；详细规则见 `.cursor/rules/06-rag-routing-context.mdc`。
+- **架构约束**：
+  - 图层：`memory_search →(intent_router)→ kb_query_node | chat`；主循环 `tools → after_tools → fallback` **零改动**。
+  - 路由：`intent_router` 是路由函数（不写 state），`kb_query_node` 是图节点（带 10s `node_timeout_guard`）。
+  - 状态：新增 `intent_route` / `forced_kb_results` 必须保持 `NotRequired`；权限走 `state.user_role_ids`。
+  - 回滚：`AGENT_RAG_ROUTER_ENABLED=false` 即退化为旧图，**不允许**移除该开关。
+- **prompt 范式**：分步实施 prompt 在 `prompts/phase-8/step-N-*.md`，**一次只执行一个 step**；每个 step 完成后必须更新 `docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`。
+- **不擅自扩张**：纯 Agent 图层改造；**禁止**修改 `packages/backend/**` 或 `packages/frontend/**`；**禁止**引入分词 / 意图分类模型依赖；**禁止**重复打 `rag:hit|miss` tag（沿用 Phase 7-2-2 的逻辑）。
