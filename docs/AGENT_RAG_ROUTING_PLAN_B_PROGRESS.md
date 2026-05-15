@@ -30,7 +30,7 @@
 |------|------|------|----------|-------------|----------|
 | 8-1 | State 字段 + 环境变量开关 | ✅ | 2026-05-15 | `@prompts/phase-8/step-1-state-and-flag.md` | `state.py` 新增 `intent_route` / `forced_kb_results`（NotRequired）；`settings.py` 读取 `AGENT_RAG_ROUTER_ENABLED`；`.env.example` 默认 `true` |
 | 8-2 | 意图路由 `intent_router`（规则法 + 单测） | ✅ | 2026-05-15 | `@prompts/phase-8/step-2-intent-router.md` | 新增 `graph/intent_router.py` + `tests/graph/test_intent_router.py`，18 个断言通过 |
-| 8-3 | RAG 强制检索节点 `kb_query_node`（超时护栏 + 单测） | ⬜ | | `@prompts/phase-8/step-3-kb-query-node.md` | 新增 `graph/kb_query_node.py` + `tests/graph/test_kb_query_node.py` |
+| 8-3 | RAG 强制检索节点 `kb_query_node`（超时护栏 + 单测） | ✅ | 2026-05-15 | `@prompts/phase-8/step-3-kb-query-node.md` | 新增 `graph/kb_query_node.py` + `tests/graph/test_kb_query_node.py`，8 用例通过 |
 | 8-4 | builder 接线 + `chat_node` 消费 `forced_kb_results` | ⬜ | | `@prompts/phase-8/step-4-builder-and-chat.md` | `builder.py` 接入路由；`nodes.py` 注入 SystemMessage |
 | 8-5 | LangSmith metadata/tags + 三组回归用例验证 | ⬜ | | `@prompts/phase-8/step-5-trace-and-regression.md` | trace tag `route:intent=*` / `route:kb_forced=*`；三组用例 LangSmith 验收 |
 
@@ -93,6 +93,7 @@
 | 2026-05-15 | 8-0 | Phase 8 文档产出：REQUIREMENTS / ARCHITECTURE / PROGRESS / HOW_TO_USE 四份文档 + `prompts/phase-8/step-1 ~ step-5` 五个原子 prompt + `.cursor/rules/06-rag-routing-context.mdc` 自动加载规则 + `.cursorrules` 追加 Phase 8 段 |
 | 2026-05-15 | 8-1 | 完成 Step 1：`state.py` 新增 `intent_route` / `forced_kb_results`（NotRequired）；`settings.py` 新增 `AGENT_RAG_ROUTER_ENABLED`（默认 true）；`.env.example` 新增开关示例。 |
 | 2026-05-15 | 8-2 | 完成 Step 2：新增 `intent_router`（规则法，信息查询优先）；新增 `tests/graph/test_intent_router.py`（18 个断言全通过）。 |
+| 2026-05-15 | 8-3 | 完成 Step 3：新增 `kb_query_node`（10s 超时护栏 + 异常降级为空）；新增 `tests/graph/test_kb_query_node.py` 并通过 8 个用例。 |
 | | | （后续每个 step 完成后追加一行） |
 
 ---
