@@ -7,6 +7,8 @@
     "dev:agent": "cd packages/agent && uv run python -m src.infra_check && uv run langgraph dev --port 8123",
     "dev:agent:mute": "cd packages/agent && uv run python -m src.infra_check && uv run langgraph dev --port 8123 --no-reload",
     "dev:agentLocal": "cd packages/agent && PLAN2CODE_AGENT_CLI_MODE=1 PYTHONIOENCODING=utf-8 uv run python -m src.cli",
-    "eval:run": "cd packages/agent && uv run eval --dataset ${EVAL_DATASET:-plan2code-smoke-v1} --limit ${EVAL_LIMIT:-20}"
+    "eval:run": "cd packages/agent && uv run eval --dataset ${EVAL_DATASET:-plan2code-smoke-v1} --limit ${EVAL_LIMIT:-20}",
+    "analysis:dry": "uv run --project packages/agent python .cursor/skills/langsmith-cost-review/scripts/pull_langsmith_metrics.py --project plan2code-agent --days 7 --top 10 --write-docs --dry-run --version v1.1",
+    "analysis": "uv run --project packages/agent python .cursor/skills/langsmith-cost-review/scripts/pull_langsmith_metrics.py --project plan2code-agent --days 7 --top 10 --write-docs --version v1.1"
   }
 }

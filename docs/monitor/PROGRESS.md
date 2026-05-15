@@ -104,11 +104,11 @@
 
 ## Phase 7-5：成本 & 性能反馈环（目标 5，P2）
 
-**整体：⬜ 未开始**（预估 0.5 天，前置依赖 Phase 7-2 Models 单价已配）
+**整体：✅ 已完成（2026-05-14）**（实际工期 0.5 天，前置依赖 Phase 7-2 Models 单价已配）
 
 | 步骤 | 描述 | 状态 | 完成时间 | 备注 |
 |------|------|------|----------|------|
-| 7-5-1 | 成本优化 Playbook 文档 | ⬜ | | 新增 `docs/monitor/COST_OPTIMIZATION_PLAYBOOK.md`；候选优化项 + 预期降本幅度 + 风险等级 + 监控指标；**v1 不实施**任何具体优化动作 |
+| 7-5-1 | 成本优化 Playbook 文档 | ✅ | 2026-05-14 | 新增 `docs/monitor/COST_OPTIMIZATION_PLAYBOOK.md` v1.0（7 天真实数据基线 + Top-10 最贵 trace + 5 个候选项 + ROI 矩阵 + 2 周实施清单） |
 
 ---
 
@@ -135,6 +135,18 @@
 
 ---
 
+## Phase 7 后续动作（来自 COST_OPTIMIZATION_PLAYBOOK v1.0）
+
+| 优先级 | 优化项 | 预估降本 | 负责人 | 计划完成 |
+|---|---|---|---|---|
+| P0 | 候选 1（RAG 检索结果数量调优） | $1.3 ~ $1.8/月 | liurixing | 2026-05-21 |
+| P0 | 候选 2（系统提示词瘦身） | $0.7 ~ $1.2/月 | liurixing | 2026-05-21 |
+| P1 | 候选 3（短消息走更便宜模型） | $0.6 ~ $1.0/月 | liurixing | 2026-05-28 |
+
+> 完成后在本表标 ✅，并在 `COST_OPTIMIZATION_PLAYBOOK.md` §5 添加历史记录。
+
+---
+
 ## 变更记录
 
 | 日期 | 变更内容 |
@@ -142,3 +154,16 @@
 | 2026-05-13 | Phase 7-0 启动；`REQUIREMENTS.md` v0.3 READY；`1.PRD.md` / `2.TECH_SELECTION.md` / `3.ARCHITECTURE.md` / `4.ARCHITECTURE_FOR_AI.md` / `PROGRESS.md` 5 份核心文档完成 |
 | 2026-05-14 | Phase 7-2 完成：`7-2-3` 看板配置已完成，`plan2code-cost-overview` 上线并在 `USER_GUIDE.md` 沉淀入口；`DoD-5` 标记为 ✅ |
 | 2026-05-14 | Phase 7-4 完成：`7-4-5` 审计日志落库完成（Backend `audit_logs` DAO + internal API + Quota/ACL 接入，Agent `audit_client` 回写）；`DoD-4` 标记为 ✅ |
+| 2026-05-14 | Phase 7-5 完成：`7-5-1`《成本 & 性能优化 Playbook v1.0》已产出，并将 Top-3 优化项沉淀到“后续动作”；`USER_GUIDE.md` 增加“每月一次”成本反馈环 SOP |
+
+<!-- LANGSMITH_COST_REVIEW:PROGRESS:START -->
+## Phase 7 后续动作（来自 COST_OPTIMIZATION_PLAYBOOK v1.1）
+
+| 优先级 | 优化项 | 预估降本 | 负责人 | 计划完成 |
+|---|---|---|---|---|
+| P0 | 候选 1（RAG 检索结果数量调优） | $1.5 ~ $2.1/月 | liurixing | 2026-05-15 |
+| P0 | 候选 2（系统提示词瘦身） | $0.6 ~ $1.1/月 | liurixing | 2026-05-15 |
+| P1 | 候选 3（短消息走更便宜模型） | $0.7 ~ $1.3/月 | liurixing | 2026-05-15 |
+
+> 完成后在本表标 ✅，并在 `COST_OPTIMIZATION_PLAYBOOK.md` §5 添加历史记录。
+<!-- LANGSMITH_COST_REVIEW:PROGRESS:END -->

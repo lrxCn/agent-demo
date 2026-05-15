@@ -53,6 +53,16 @@
 | 想新增一个评估场景 | §4.4 |
 | Cursor 突然不会自动加载监控规则 | §8 Q5 |
 
+### 每月一次 — 成本反馈环
+
+第 1 周完成后开始：
+
+1. 重跑本文 §0 的 7 天看板巡检，记录基线数字。
+2. 找出 Top-10 最贵 trace，归纳高成本模式。
+3. 用 `@docs/monitor/COST_OPTIMIZATION_PLAYBOOK.md` 追加一个新版本（如 v1.1）。
+4. 选 ROI 最高的 1~2 项实施，每次实施后都跑 `pnpm eval:run -- --dataset bad --baseline <实施前实验名>` 验证无回归。
+5. 在 Playbook §5“已采纳的优化项历史”新增一行，记录实施前后成本对比。
+
 ---
 
 ## 2. LangSmith 看板使用指南
@@ -445,3 +455,15 @@ v2 视情况补，建议接 webhook + 阈值规则（如"prompt_injection 当小
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v1 | 2026-05-13 | 首版。覆盖日常巡检 / 看板 / Bad case / Eval / Guardrails / 成本 6 大场景 + 10 个 FAQ。 |
+
+<!-- LANGSMITH_COST_REVIEW:USER_GUIDE:START -->
+### 每月一次 — 成本反馈环（自动化版本）
+
+第 1 周完成后开始：
+
+1. 运行本 skill 拉取最近 7 天真实指标。
+2. 自动更新 `docs/monitor/COST_OPTIMIZATION_PLAYBOOK.md` 新版本。
+3. 选 ROI 最高 1~2 项实施，并执行 `pnpm eval:run -- --dataset bad --baseline <实施前实验名>`。
+4. 在 Playbook §5 更新“实施前后成本”历史记录。
+5. 回看 LangSmith 看板验证降本是否达标。
+<!-- LANGSMITH_COST_REVIEW:USER_GUIDE:END -->
