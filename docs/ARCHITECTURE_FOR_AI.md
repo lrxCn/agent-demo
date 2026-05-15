@@ -41,8 +41,13 @@
 - src/rag/retriever.py — 向量检索 + Rerank。知识库检索需传入用户 role_ids 并使用 MatchAny 过滤；通话记录检索按 participant_ids 过滤；引入 BGE-Reranker-V2-M3 进行二阶段精排。
 - src/config/settings.py — 从 .env 读取所有配置
 
-图的执行流程：
-START → chat_node → 判断是否有 tool_calls → 有则进入 tool_node_with_retry → 工具执行后判断是否有失败 → 有失败走 fallback_node → END，无失败回 chat_node → 无 tool_calls 则直接 END
+图的执行流程（Phase 8 方案 B：`AGENT_RAG_ROUTER_ENABLED=true`）：
+START → memory_search → intent_router →
+├─ kb_query_node → chat
+└─ chat
+chat → memory_save → 判断是否有 tool_calls → 有则进入 tool_node_with_retry → 工具执行后判断是否有失败 → 有失败走 fallback_node → END，无失败回 memory_search → 无 tool_calls 则直接 END
+
+启用 `AGENT_RAG_ROUTER_ENABLED=false` 时，memory_search 之后不经过意图路由与 kb_query，直接进入 chat（与改造前等价）。
 
 工具按需加载机制：
 chat_node 中，先从 registry 获取所有 builtin 工具，再根据 state 中的 available_frontend_tools 列表（由前端通过 WebSocket 实时更新）从 registry 获取匹配的 frontend 工具。只有当前页面注册的前端工具才会被注入到 LLM 的 bind_tools 中。
@@ -122,6 +127,7 @@ Agent 通过结构化输出返回 tool_call → NestJS 通过 WebSocket 发送 t
 - JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN — JWT 配置
 - LANGGRAPH_API_URL — LangGraph 服务地址
 - LANGSMITH_API_KEY, LANGCHAIN_TRACING_V2 — LangSmith 追踪
+- AGENT_RAG_ROUTER_ENABLED — Phase 8 RAG 路由方案 B：`true`（默认）时 `memory_search` 后经 `intent_router` 可走 `kb_query_node` 强制检索；`false` 时退回旧图（`memory_search` 直通 `chat`，trace 不出现 `route:*` 标签）。
 
 ## API 接口速查
 

@@ -231,6 +231,22 @@ def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
         except Exception:  # noqa: BLE001
             # 监控埋点失败不影响主流程
             pass
+    # === Phase 8 / Step 5：路由判定 tag ===
+    if get_current_run_tree is not None:
+        try:
+            forced = state.get('forced_kb_results')
+            kb_forced = isinstance(forced, list)  # 节点跑过即非 None
+            # intent_router 不写 state；以 forced_kb_results 是否为 list 反推分支
+            intent = 'kb_query' if kb_forced else 'chat_direct'
+            _add_tags_to_trace_root(
+                [
+                    f'route:intent={intent}',
+                    f'route:kb_forced={"true" if kb_forced else "false"}',
+                ],
+            )
+        except Exception:  # noqa: BLE001
+            # 监控埋点失败不影响主流程
+            pass
     # 监控体系 Phase 7-4 Step 3：prompt-injection 关键词初筛
     last_human_text = ''
     for msg in reversed(state['messages']):

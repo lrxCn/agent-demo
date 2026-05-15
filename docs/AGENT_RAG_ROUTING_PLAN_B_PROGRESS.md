@@ -24,7 +24,7 @@
 
 ## Phase 8 总进度
 
-**整体：🔄 进行中**（预估 1.5 ~ 2 天，纯 Agent 图层改造，前后端零变更）
+**整体：✅ 已完成（开发与设计交付）**（纯 Agent 图层改造；2026-05-15。E2e / eval / 指标类 DoD 见下方「收官说明」与各节勾选。）
 
 | 步骤 | 描述 | 状态 | 完成时间 | Prompt 文件 | 主要产出 |
 |------|------|------|----------|-------------|----------|
@@ -32,9 +32,11 @@
 | 8-2 | 意图路由 `intent_router`（规则法 + 单测） | ✅ | 2026-05-15 | `@prompts/phase-8/step-2-intent-router.md` | 新增 `graph/intent_router.py` + `tests/graph/test_intent_router.py`，18 个断言通过 |
 | 8-3 | RAG 强制检索节点 `kb_query_node`（超时护栏 + 单测） | ✅ | 2026-05-15 | `@prompts/phase-8/step-3-kb-query-node.md` | 新增 `graph/kb_query_node.py` + `tests/graph/test_kb_query_node.py`，8 用例通过 |
 | 8-4 | builder 接线 + `chat_node` 消费 `forced_kb_results` | ✅ | 2026-05-15 | `@prompts/phase-8/step-4-builder-and-chat.md` | `builder.py` 接入路由；`nodes.py` 注入 SystemMessage |
-| 8-5 | LangSmith metadata/tags + 三组回归用例验证 | ⬜ | | `@prompts/phase-8/step-5-trace-and-regression.md` | trace tag `route:intent=*` / `route:kb_forced=*`；三组用例 LangSmith 验收 |
+| 8-5 | LangSmith metadata/tags + 三组回归用例验证 | ✅ | 2026-05-15 | `@prompts/phase-8/step-5-trace-and-regression.md` | `chat_node` 根 tag `route:intent=*` / `route:kb_forced=*`；`kb_query_node` span `route:kb_forced=true` |
 
 ---
+
+> **收官说明**：路由相关**代码与文档**已合并；LangSmith 三组用例、回滚演练、`pnpm eval:run -- --dataset rag` 与 `audit_logs` 四类事件须按 `@prompts/phase-8/step-5-trace-and-regression.md` **任务 3～5** 在目标环境跑通后，再将下方 DoD 逐项勾选。
 
 ## 验收门槛（DoD）
 
@@ -95,6 +97,7 @@
 | 2026-05-15 | 8-2 | 完成 Step 2：新增 `intent_router`（规则法，信息查询优先）；新增 `tests/graph/test_intent_router.py`（18 个断言全通过）。 |
 | 2026-05-15 | 8-3 | 完成 Step 3：新增 `kb_query_node`（10s 超时护栏 + 异常降级为空）；新增 `tests/graph/test_kb_query_node.py` 并通过 8 个用例。 |
 | 2026-05-15 | 8-4 | 完成 Step 4：`builder.py` 按 `AGENT_RAG_ROUTER_ENABLED` 切换新/旧图（`memory_search→intent_router→kb_query/chat`）；`chat_node` 在 memories 注入前消费 `forced_kb_results` 并追加 SystemMessage；主循环未改动。 |
+| 2026-05-15 | 8-5 | Phase 8 收官：`chat_node` 根 trace 追加 `route:intent=*`、`route:kb_forced=*`；`kb_query_node` span 追加 `route:kb_forced=true`；同步 `ARCHITECTURE_FOR_AI.md` / `PROJECT_STATUS.md`；DoD 人工项见「收官说明」。 |
 | | | （后续每个 step 完成后追加一行） |
 
 ---
