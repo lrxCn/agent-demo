@@ -26,3 +26,15 @@ EMBEDDING_MODEL_DIMS = int(os.getenv('EMBEDDING_MODEL_DIMS', '1024'))
 # Rerank 配置
 RERANK_MODEL = os.getenv('RERANK_MODEL', 'BAAI/bge-reranker-v2-m3')
 RERANK_TOP_K = int(os.getenv('RERANK_TOP_K', '5'))
+
+
+# === Phase 8 新增：RAG 路由方案 B 开关 ===
+# 默认 true（启用方案 B）；置为 false 可瞬间回滚到 START → memory_search → chat 旧图
+def _parse_bool_env(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+AGENT_RAG_ROUTER_ENABLED = _parse_bool_env('AGENT_RAG_ROUTER_ENABLED', default=True)

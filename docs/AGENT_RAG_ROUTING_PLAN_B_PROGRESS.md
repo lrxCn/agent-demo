@@ -24,11 +24,11 @@
 
 ## Phase 8 总进度
 
-**整体：⬜ 未开始**（预估 1.5 ~ 2 天，纯 Agent 图层改造，前后端零变更）
+**整体：🔄 进行中**（预估 1.5 ~ 2 天，纯 Agent 图层改造，前后端零变更）
 
 | 步骤 | 描述 | 状态 | 完成时间 | Prompt 文件 | 主要产出 |
 |------|------|------|----------|-------------|----------|
-| 8-1 | State 字段 + 环境变量开关 | ⬜ | | `@prompts/phase-8/step-1-state-and-flag.md` | `state.py` 新增字段；`.env.example` 增 `AGENT_RAG_ROUTER_ENABLED` |
+| 8-1 | State 字段 + 环境变量开关 | ✅ | 2026-05-15 | `@prompts/phase-8/step-1-state-and-flag.md` | `state.py` 新增 `intent_route` / `forced_kb_results`（NotRequired）；`settings.py` 读取 `AGENT_RAG_ROUTER_ENABLED`；`.env.example` 默认 `true` |
 | 8-2 | 意图路由 `intent_router`（规则法 + 单测） | ⬜ | | `@prompts/phase-8/step-2-intent-router.md` | 新增 `graph/intent_router.py` + `tests/graph/test_intent_router.py` |
 | 8-3 | RAG 强制检索节点 `kb_query_node`（超时护栏 + 单测） | ⬜ | | `@prompts/phase-8/step-3-kb-query-node.md` | 新增 `graph/kb_query_node.py` + `tests/graph/test_kb_query_node.py` |
 | 8-4 | builder 接线 + `chat_node` 消费 `forced_kb_results` | ⬜ | | `@prompts/phase-8/step-4-builder-and-chat.md` | `builder.py` 接入路由；`nodes.py` 注入 SystemMessage |
@@ -91,6 +91,7 @@
 | 日期 | 步骤 | 变更内容 |
 |------|------|----------|
 | 2026-05-15 | 8-0 | Phase 8 文档产出：REQUIREMENTS / ARCHITECTURE / PROGRESS / HOW_TO_USE 四份文档 + `prompts/phase-8/step-1 ~ step-5` 五个原子 prompt + `.cursor/rules/06-rag-routing-context.mdc` 自动加载规则 + `.cursorrules` 追加 Phase 8 段 |
+| 2026-05-15 | 8-1 | 完成 Step 1：`state.py` 新增 `intent_route` / `forced_kb_results`（NotRequired）；`settings.py` 新增 `AGENT_RAG_ROUTER_ENABLED`（默认 true）；`.env.example` 新增开关示例。 |
 | | | （后续每个 step 完成后追加一行） |
 
 ---
