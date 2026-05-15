@@ -1,12 +1,15 @@
 """长期记忆图节点：检索与持久化与 chat 解耦"""
+
 import logging
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
+from src.graph.guards import node_timeout_guard
 from src.graph.state import AgentState
 from src.memory.long_term import save_memories, search_memories
 
 logger = logging.getLogger(__name__)
+MEMORY_SEARCH_TIMEOUT_SECONDS = 30
 
 
 def _last_human_text(messages: list[BaseMessage]) -> str:
@@ -15,35 +18,40 @@ def _last_human_text(messages: list[BaseMessage]) -> str:
         if isinstance(msg, HumanMessage):
             content = msg.content
             return content if isinstance(content, str) else str(content)
-    return ''
+    return ""
 
 
+@node_timeout_guard(
+    node_name="memory_search",
+    timeout_seconds=MEMORY_SEARCH_TIMEOUT_SECONDS,
+    fallback=lambda: {"retrieved_memories": []},
+)
 def memory_search_node(state: AgentState) -> dict[str, list[str]]:
     """按当前对话与 user_id 检索 Mem0，结果写入 state 供 chat 注入系统提示"""
-    user_id = (state.get('mem0_user_id') or '').strip()
-    messages = state['messages']
+    user_id = (state.get("mem0_user_id") or "").strip()
+    messages = state["messages"]
     if not user_id:
-        return {'retrieved_memories': []}
+        return {"retrieved_memories": []}
 
     query_text = _last_human_text(messages)
     if not query_text:
-        return {'retrieved_memories': []}
+        return {"retrieved_memories": []}
 
     try:
         memories = search_memories(query_text, user_id)
     except Exception:
-        logger.exception('长期记忆检索失败')
+        logger.exception("长期记忆检索失败")
         memories = []
-    return {'retrieved_memories': memories}
+    return {"retrieved_memories": memories}
 
 
 def memory_save_node(state: AgentState) -> dict[str, object]:
     """将本轮用户句与刚生成的助手回复写入 Mem0；失败仅打日志"""
-    user_id = (state.get('mem0_user_id') or '').strip()
+    user_id = (state.get("mem0_user_id") or "").strip()
     if not user_id:
         return {}
 
-    msgs = state['messages']
+    msgs = state["messages"]
     if not msgs:
         return {}
 
@@ -62,11 +70,11 @@ def memory_save_node(state: AgentState) -> dict[str, object]:
     try:
         save_memories(
             [
-                {'role': 'user', 'content': user_content},
-                {'role': 'assistant', 'content': asst_str},
+                {"role": "user", "content": user_content},
+                {"role": "assistant", "content": asst_str},
             ],
             user_id=user_id,
         )
     except Exception:
-        logger.exception('长期记忆保存失败')
+        logger.exception("长期记忆保存失败")
     return {}

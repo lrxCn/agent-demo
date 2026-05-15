@@ -2,6 +2,7 @@
   "name": "agent-demo",
   "private": true,
   "scripts": {
+    "dev": "pnpm dlx concurrently -n frontend,backend,agent -c blue,green,magenta \"pnpm dev:frontend\" \"pnpm dev:backend\" \"pnpm dev:agent\"",
     "dev:frontend": "pnpm -C packages/frontend dev",
     "dev:backend": "pnpm -C packages/backend start:dev",
     "dev:agent": "cd packages/agent && uv run python -m src.infra_check && uv run langgraph dev --port 8123",
