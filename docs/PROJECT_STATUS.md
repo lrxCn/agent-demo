@@ -128,14 +128,14 @@
 > ⚠️ **本 Phase 的详细进度独立维护在 `docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`**（接力棒）。
 > 此处仅作单行指向，避免双重维护造成不一致。
 
-**Phase 8 整体：🔄 进行中（2026-05-15，8-1 已完成）**
+**Phase 8 整体：🔄 进行中（2026-05-15，8-1 ~ 8-4 已完成）**
 
 | 步骤 | 描述 | 状态 | 详细文档 |
 |------|------|------|----------|
 | 8-1 | State 字段 + 环境变量回滚开关 | ✅ | `@prompts/phase-8/step-1-state-and-flag.md` |
 | 8-2 | 意图路由 `intent_router`（规则法 + 单测） | ✅ | `@prompts/phase-8/step-2-intent-router.md` |
 | 8-3 | RAG 强制检索节点 `kb_query_node` | ✅ | `@prompts/phase-8/step-3-kb-query-node.md` |
-| 8-4 | builder 接线 + `chat_node` 消费 forced_kb | ⬜ | `@prompts/phase-8/step-4-builder-and-chat.md` |
+| 8-4 | builder 接线 + `chat_node` 消费 forced_kb | ✅ | `@prompts/phase-8/step-4-builder-and-chat.md` |
 | 8-5 | LangSmith metadata/tags + 三组回归 | ⬜ | `@prompts/phase-8/step-5-trace-and-regression.md` |
 
 **入口文档**：
@@ -205,3 +205,4 @@
 | 2026-05-15 | Phase 8 Step 8-1 执行完成：`state.py` 新增 `intent_route` / `forced_kb_results`（NotRequired），`settings.py` 新增 `AGENT_RAG_ROUTER_ENABLED`（默认 true），`.env.example` 增开关示例，并同步更新 `docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`。 |
 | 2026-05-15 | Phase 8 Step 8-2 执行完成：新增 `src/graph/intent_router.py`（规则法：信息查询优先于导航）；新增 `tests/graph/test_intent_router.py` 并通过 18 个断言；同步更新 `docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`。 |
 | 2026-05-15 | Phase 8 Step 8-3 执行完成：新增 `src/graph/kb_query_node.py`（10s 超时护栏、角色透传、异常/空结果降级）；新增 `tests/graph/test_kb_query_node.py` 并通过 8 个用例；同步更新 `docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md`。 |
+| 2026-05-15 | Phase 8 Step 8-4 执行完成：`builder.py` 按 `AGENT_RAG_ROUTER_ENABLED` 切换新/旧图；`chat_node` 注入 `forced_kb_results` SystemMessage；同步更新 `docs/AGENT_RAG_ROUTING_PLAN_B_PROGRESS.md` 与本文件 Phase 8 表。 |

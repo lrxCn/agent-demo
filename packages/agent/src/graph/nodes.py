@@ -298,6 +298,28 @@ def chat_node(state: AgentState) -> dict[str, list[BaseMessage]]:
     tools = builtin_tools + frontend_tools
 
     llm = get_llm(tools=tools)
+
+    # === Phase 8：消费 kb_query_node 写入的强制检索结果 ===
+    forced_kb = state.get('forced_kb_results') or []
+    if forced_kb:
+        kb_text = '\n\n'.join(
+            [
+                f'- [score={item.get("score", 0):.2f}] {item.get("text", "")}'
+                for item in forced_kb
+            ]
+        )
+        messages = [
+            SystemMessage(
+                content=(
+                    '以下是与用户问题相关的知识库检索结果，请优先基于此回答：\n'
+                    f'{kb_text}\n\n'
+                    '若检索结果与问题不匹配，可礼貌说明并询问用户是否需要其他帮助；'
+                    '在用户没有明确说"打开/跳转/进入页面"前，不要主动调用 navigate_to_page 工具。'
+                ),
+            ),
+            *messages,
+        ]
+
     memories = state.get('retrieved_memories') or []
 
     if memories:

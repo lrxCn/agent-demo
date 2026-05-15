@@ -5,6 +5,9 @@ from langchain_core.messages import AIMessage
 
 from langgraph.graph import END, START, StateGraph
 
+from src.config.settings import AGENT_RAG_ROUTER_ENABLED
+from src.graph.intent_router import intent_router
+from src.graph.kb_query_node import kb_query_node
 from src.graph.memory_nodes import memory_save_node, memory_search_node
 from src.graph.nodes import after_tools, chat_node, fallback_node, tool_node_with_retry
 from src.graph.state import AgentState
@@ -36,8 +39,26 @@ builder.add_node('chat', chat_node)
 builder.add_node('memory_save', memory_save_node)
 builder.add_node('tools', tool_node_with_retry)
 builder.add_node('fallback', fallback_node)
-builder.add_edge(START, 'memory_search')
-builder.add_edge('memory_search', 'chat')
+
+if AGENT_RAG_ROUTER_ENABLED:
+    # === Phase 8 方案 B 新图 ===
+    builder.add_node('kb_query', kb_query_node)
+    builder.add_edge(START, 'memory_search')
+    builder.add_conditional_edges(
+        'memory_search',
+        intent_router,
+        {
+            'kb_query': 'kb_query',
+            'chat_direct': 'chat',
+        },
+    )
+    builder.add_edge('kb_query', 'chat')
+else:
+    # === 旧图（回滚分支）===
+    builder.add_edge(START, 'memory_search')
+    builder.add_edge('memory_search', 'chat')
+
+# 后续主循环（两种图共用，零改动）
 builder.add_edge('chat', 'memory_save')
 builder.add_conditional_edges(
     'memory_save',
